@@ -20,8 +20,8 @@ import { withBase } from "astro-theme-university/url";
   <section id="jump-trial" aria-labelledby="jump-trial-heading">
     <h2 id="jump-trial-heading">Try a jump</h2>
     <p>
-      Every idea in this course starts with the same jump — try it below. No
-      lives, score or way to lose; a miss just resets you to the start.
+      An endless little obstacle course. Your runner moves automatically —
+      you choose when to jump. Bump into a block? Try again, as often as you like.
     </p>
 
     <div class="jump-trial-stages" role="group" aria-label="Trial stage">
@@ -46,11 +46,16 @@ import { withBase } from "astro-theme-university/url";
       <button type="button" data-preference="charged" class="at-button">I prefer Charged</button>
     </div>
 
+    <div class="play-toolbar">
+      <p id="play-help">Auto-run · <kbd>Space</kbd> or Jump to start and jump · Hold for height · <kbd>R</kbd> restart</p>
+      <button type="button" id="jump-trial-reset" class="at-button at-button--outline at-button--small">↻ Reset jump</button>
+    </div>
     <div
       id="jump-trial-focus-region"
       class="jump-trial-playfield"
       tabindex="0"
-      aria-label="Jump trial playfield. Use left and right arrow keys or A and D to move, and space to jump."
+      aria-describedby="play-help"
+      aria-label="Automatic runner. Press Space or the Jump button to start and jump. R restarts."
     >
       <JumpCanvas
         id="jump-trial-canvas"
@@ -59,11 +64,12 @@ import { withBase } from "astro-theme-university/url";
         height={360}
       />
     </div>
+    <p id="runner-status" role="status">Ready? Press Space or Jump.</p>
 
     <div class="jump-touch-controls">
-      <button type="button" id="jump-trial-left" class="at-button at-button--large" aria-label="Move left">◀</button>
+      <button hidden type="button" id="jump-trial-left" aria-label="Move left">◀</button>
       <button type="button" id="jump-trial-jump" class="at-button at-button--large" aria-label="Jump">Jump</button>
-      <button type="button" id="jump-trial-right" class="at-button at-button--large" aria-label="Move right"
+      <button hidden type="button" id="jump-trial-right" aria-label="Move right"
         >▶</button
       >
     </div>
@@ -85,9 +91,6 @@ import { withBase } from "astro-theme-university/url";
         <div><dt>Airtime</dt><dd id="metric-airtime">—</dd></div>
       </dl>
       <div class="jump-trial-actions">
-        <button type="button" id="jump-trial-reset" class="at-button at-button--outline at-button--small"
-          >Reset</button
-        >
         <button
           type="button"
           id="jump-trial-mute"
@@ -144,6 +147,10 @@ import { withBase } from "astro-theme-university/url";
 </ContentLayout>
 
 <style>
+  .play-toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin:1rem 0; }
+  .play-toolbar p { margin:0; font-size:.85rem; max-width:32rem; }
+  kbd { display:inline-block; padding:.1rem .35rem; border:1px solid var(--at-border); border-bottom-width:3px; border-radius:4px; font:inherit; }
+  .jump-touch-controls button { touch-action:none; user-select:none; }
   .course-tags {
     display: flex;
     flex-wrap: wrap;
@@ -249,7 +256,7 @@ import { withBase } from "astro-theme-university/url";
 
 <script>
   import { createJumpAudio } from "../lib/jump/audio";
-  import { flatField, gapField } from "../lib/jump/field";
+  import { flatField } from "../lib/jump/field";
   import { createInputController } from "../lib/jump/input";
   import { createLiveLoop } from "../lib/jump/loop";
   import { DEFAULT_MOTION, DEFAULT_POSE } from "../lib/jump/presets";
@@ -259,16 +266,13 @@ import { withBase } from "astro-theme-university/url";
 
   const PREFERENCE_KEY = "jump-mode-preference";
   const MUTE_KEY = "jump-audio-muted";
-  const HOME_GAP_START = 3;
-  const HOME_GAP_WIDTH = 1.2;
-  const HOME_GAP_REACH = 200;
 
   type Stage = "try-immediate" | "try-charged" | "preference" | "free-play";
   const STAGE_DESCRIPTIONS: Record<Stage, string> = {
     "try-immediate": "Immediate mode: press Jump to launch. Hold it for more height; release early to cut the jump short.",
     "try-charged": "Charged mode: hold Jump to charge, then release to launch. A longer hold reaches more height, up to a cap.",
     preference: "Which did you prefer? Pick one — you can always change your mind later.",
-    "free-play": "Free play: a short gap now sits ahead. Walk into it, time a jump to clear it, and try both directions.",
+    "free-play": "Keep running, clear the blocks, and compare the two jump styles. There is no score to lose.",
   };
 
   const canvas = document.getElementById("jump-trial-canvas") as HTMLCanvasElement | null;
@@ -318,8 +322,8 @@ import { withBase } from "astro-theme-university/url";
 
   let stage: Stage = "try-immediate";
 
-  function fieldForStage(s: Stage): Field {
-    return s === "free-play" ? gapField(HOME_GAP_START, HOME_GAP_WIDTH, HOME_GAP_REACH) : flatField();
+  function fieldForStage(_s: Stage): Field {
+    return flatField(1e9);
   }
 
   function modeForStage(s: Stage): JumpMode {
@@ -329,13 +333,73 @@ import { withBase } from "astro-theme-university/url";
     return stored === "charged" ? "charged" : "immediate";
   }
 
+  let running = false;
+  let hit = false;
+  let spaceHeld = false;
+  let spaceLatch = false;
+  const runnerStatus = document.getElementById("runner-status")!;
+  const firstObstacle = 7;
+  const obstacleSpacingMin = 4;
+  const obstacleSpacingMax = 6.5;
+  const obstacleWidth = .42;
+  const obstacleHeight = .48;
+
+  // Deterministic per-index pseudo-random in [0, 1): obstacle spacing varies
+  // (a metronomic fixed gap read as robotic) but the sequence a player sees
+  // on a retry is the same one, so a bad run is never just bad luck.
+  function obstacleSpacingHash(n: number): number {
+    const h = Math.sin(n * 12.9898) * 43758.5453;
+    return h - Math.floor(h);
+  }
+
+  const obstacleXs: number[] = [firstObstacle];
+  function ensureObstaclesUpTo(x: number): void {
+    while (obstacleXs[obstacleXs.length - 1] < x) {
+      const spacing =
+        obstacleSpacingMin + obstacleSpacingHash(obstacleXs.length) * (obstacleSpacingMax - obstacleSpacingMin);
+      obstacleXs.push(obstacleXs[obstacleXs.length - 1] + spacing);
+    }
+  }
+  function nearestObstacleX(x: number): number {
+    ensureObstaclesUpTo(x + obstacleSpacingMax);
+    let nearest = obstacleXs[0];
+    for (const ox of obstacleXs) {
+      if (Math.abs(ox - x) < Math.abs(nearest - x)) nearest = ox;
+      if (ox > x + obstacleSpacingMax) break;
+    }
+    return nearest;
+  }
   const loop = createLiveLoop(
     { mode: modeForStage(stage), motion: DEFAULT_MOTION, field: fieldForStage(stage) },
     {
-      getInput: () => input.getFrame(),
+      getInput: () => {
+        const frame = input.getFrame();
+        const jumpHeld = frame.jumpHeld || spaceHeld || spaceLatch;
+        spaceLatch = false;
+        if (jumpHeld && !running) {
+          if (hit) loop.reset();
+          hit = false;
+          running = true;
+          runnerStatus.textContent = "Jump over the blocks. Hold for more height.";
+        }
+        return { moveX: running ? 1 : 0, jumpHeld };
+      },
+      onFrame: (state) => {
+        if (!running) return;
+        const obstacleX = nearestObstacleX(state.x);
+        if (Math.abs(state.x - obstacleX) < obstacleWidth / 2 + .13 && state.y < obstacleHeight) {
+          running = false;
+          hit = true;
+          loop.stop();
+          runnerStatus.textContent = "Bumped a block! Press Space or Jump to try again.";
+        }
+      },
       onTakeoff: () => audio.playTakeoff(),
       onLanding: () => audio.playLanding(),
-      onTrialComplete: (summary) => showSummary(summary),
+      onTrialComplete: (summary) => {
+        showSummary(summary);
+        if (!summary.complete) loop.reset();
+      },
     },
   );
 
@@ -358,6 +422,12 @@ import { withBase } from "astro-theme-university/url";
   }
 
   function setStage(next: Stage) {
+    running = false;
+    hit = false;
+    spaceHeld = false;
+    spaceLatch = false;
+    runnerStatus.textContent = "Ready? Press Space or Jump.";
+    loop.start();
     stage = next;
     for (const button of stageButtons) {
       button.setAttribute("aria-pressed", String(button.dataset.stage === next));
@@ -397,8 +467,42 @@ import { withBase } from "astro-theme-university/url";
   }
 
   resetButton.addEventListener("click", () => {
+    running = false;
+    hit = false;
+    spaceHeld = false;
+    spaceLatch = false;
+    loop.start();
+    runnerStatus.textContent = "Ready? Press Space or Jump.";
     loop.reset();
     clearSummary();
+    focusRegion.focus({ preventScroll: true });
+  });
+  focusRegion.addEventListener("pointerdown", () => focusRegion.focus({ preventScroll: true }));
+  let trialVisible = false;
+  new IntersectionObserver(([entry]) => { trialVisible = entry.isIntersecting; }, { threshold: .25 }).observe(canvas);
+  window.addEventListener("keydown", (event) => {
+    const target = event.target as HTMLElement;
+    if (!trialVisible || target.closest('input, textarea, select, [contenteditable="true"]')) return;
+    if (event.code === "Space") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (!event.repeat) { spaceHeld = true; spaceLatch = true; loop.start(); unlockAudioOnce(); }
+    } else if (event.code === "KeyR") {
+      event.preventDefault();
+      resetButton.click();
+    }
+  }, true);
+  window.addEventListener("keyup", (event) => {
+    if (event.code === "Space") { spaceHeld = false; if (trialVisible) event.preventDefault(); }
+  }, true);
+  window.addEventListener("blur", () => { spaceHeld = false; spaceLatch = false; });
+  jumpButton.addEventListener("pointerdown", () => loop.start());
+  focusRegion.addEventListener("keydown", (event) => {
+    if (event.code === "KeyR") {
+      event.preventDefault();
+      loop.reset();
+      clearSummary();
+    }
   });
 
   muteButton.addEventListener("click", () => {
@@ -417,15 +521,27 @@ import { withBase } from "astro-theme-university/url";
   }
   focusRegion.addEventListener("keydown", unlockAudioOnce, { once: true });
   focusRegion.addEventListener("pointerdown", unlockAudioOnce, { once: true });
+  for (const button of [leftButton, rightButton, jumpButton]) {
+    button.addEventListener("pointerdown", unlockAudioOnce);
+  }
 
   setStage(stage);
 
   function render() {
     const state = loop.getState();
     const theme = readTheme(canvas!);
-    viewport.cameraX = state.x;
+    viewport.cameraX = state.x + 1.4;
     followCharacterVertically(viewport, state, 1);
     drawScene(ctx!, { state, pose: DEFAULT_POSE, field: fieldForStage(stage), viewport, theme, characterWorldHeight: 1 });
+    ctx!.fillStyle = theme.primary;
+    ensureObstaclesUpTo(state.x + 20);
+    for (const x of obstacleXs) {
+      if (x < state.x - 6) continue;
+      if (x > state.x + 16) break;
+      const px = canvas!.width / 2 + (x - viewport.cameraX - obstacleWidth / 2) * viewport.pixelsPerUnit;
+      const py = viewport.groundYPixel + viewport.cameraY * viewport.pixelsPerUnit;
+      ctx!.fillRect(px, py - obstacleHeight * viewport.pixelsPerUnit, obstacleWidth * viewport.pixelsPerUnit, obstacleHeight * viewport.pixelsPerUnit);
+    }
     requestAnimationFrame(render);
   }
 
