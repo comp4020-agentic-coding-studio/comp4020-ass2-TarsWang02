@@ -10,7 +10,97 @@ import { siteConfig } from "../../site-config";
 >
   <p>
     The Jump Lab is being built in stages: the home trial and the
-    gravity/launch-speed experiment first, then presets and A/B replay. This
-    page will hold the full console once those are wired up.
+    gravity/launch-speed experiment first, then presets and A/B replay. Below
+    is the shared engine driving the same articulated character through each
+    named preset, so you can see the physics and posture before the controls
+    arrive.
+  </p>
+  <canvas
+    id="jump-preview"
+    width="720"
+    height="420"
+    role="img"
+    aria-label="A preview of the shared jump character cycling through the Floaty, Heavy, and Precise presets"
+    style="width: 100%; max-width: 720px; height: auto; border: 1px solid var(--at-border); border-radius: var(--at-border-radius); background: var(--at-bg-alt); display: block;"
+  ></canvas>
+  <p id="jump-preview-caption" style="color: var(--at-text-secondary); font-size: var(--at-font-size-sm);">
+    Preset: <strong id="jump-preview-preset-name"></strong> — <span id="jump-preview-preset-summary"></span>
   </p>
 </ContentLayout>
+
+<script>
+  import { runTrial } from "../../lib/jump/engine";
+  import { flatField } from "../../lib/jump/field";
+  import { PRESETS } from "../../lib/jump/presets";
+  import { drawScene, makeViewport, readTheme } from "../../lib/jump/renderer";
+  import type { InputFrame } from "../../lib/jump/types";
+
+  const canvas = document.getElementById("jump-preview") as HTMLCanvasElement | null;
+  const nameEl = document.getElementById("jump-preview-preset-name");
+  const summaryEl = document.getElementById("jump-preview-preset-summary");
+  if (!canvas || !nameEl || !summaryEl) throw new Error("Jump Lab preview markup missing");
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("2D canvas context unavailable");
+
+  const DT = 1 / 60;
+  const HOLD_SECONDS = 0.9;
+  const TRIAL_SECONDS = 3;
+  const PAUSE_SECONDS = 1.2;
+  const field = flatField();
+  // Floaty is the tallest preset (apex ~2.7 world units); at this scale and
+  // canvas height the apex plus the character's own height still clears the
+  // top of the canvas with room to spare.
+  const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function buildInputs(): InputFrame[] {
+    const frameCount = Math.round(TRIAL_SECONDS / DT);
+    const heldFrames = Math.round(HOLD_SECONDS / DT);
+    const frames: InputFrame[] = [];
+    for (let i = 0; i < frameCount; i++) {
+      frames.push({ moveX: 0, jumpHeld: i < heldFrames });
+    }
+    return frames;
+  }
+
+  let presetIndex = 0;
+  let visible = !document.hidden;
+  document.addEventListener("visibilitychange", () => {
+    visible = !document.hidden;
+  });
+
+  function playPreset() {
+    if (!visible) {
+      setTimeout(playPreset, 500);
+      return;
+    }
+    const preset = PRESETS[presetIndex % PRESETS.length];
+    nameEl!.textContent = preset.label;
+    summaryEl!.textContent = preset.summary;
+    presetIndex++;
+
+    const trial = runTrial(buildInputs(), "charged", preset.motion, field, DT);
+    const theme = readTheme(canvas!);
+
+    let frame = 0;
+    const totalFrames = trial.frames.length;
+    const step = () => {
+      if (!visible) {
+        setTimeout(step, 500);
+        return;
+      }
+      const state = trial.frames[Math.min(frame, totalFrames - 1)];
+      drawScene(ctx!, { state, pose: preset.pose, field, viewport, theme, characterWorldHeight: 1 });
+      frame += reducedMotion ? Math.ceil(totalFrames / 24) : 1;
+      if (frame < totalFrames) {
+        requestAnimationFrame(step);
+      } else {
+        setTimeout(playPreset, PAUSE_SECONDS * 1000);
+      }
+    };
+    requestAnimationFrame(step);
+  }
+
+  playPreset();
+</script>
