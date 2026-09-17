@@ -1,0 +1,102 @@
+---
+title: Same Path, Different Body
+description: Week 7 lecture deck — why posture and physics are separate design levers.
+---
+
+{/* _class: impact */}
+
+# Same Path, Different Body
+
+Week 7 — The Anatomy of a Jump
+
+---
+
+## Question
+
+Two characters follow the exact same recorded trajectory through the air.
+
+Same height. Same displacement. Same airtime, frame for frame.
+
+Can they still look like they're jumping differently?
+
+---
+
+{/* _class: centered */}
+
+## Yes — and nothing about the path has to change
+
+What's left to change, once the path is fixed?
+
+---
+
+## What the physics engine owns
+
+- gravity, launch speed → how high, how long
+- air control → how much a held direction redirects you mid-air
+- release cut, coyote time, jump buffer → forgiveness around timing
+
+None of this is about how the body *looks*.
+
+---
+
+## What pose owns
+
+- arm swing
+- leg tuck
+- landing compression
+
+Computed **from** the trajectory, after it's already decided. Never fed back
+into it.
+
+---
+
+{/* _class: quote */}
+
+> A pose that changed the outcome wouldn't be a pose. It would be a hidden
+> physics parameter wearing a costume.
+
+---
+
+## The comparison
+
+Load the identical trajectory into two bodies.
+
+Push one body's arm swing and landing compression high. Push the other's
+low. Change nothing about the path.
+
+One reads as loose and reactive. One reads as stiff and controlled.
+
+The overlay of their paths is a single line.
+
+---
+
+## Why this had to be true earlier, not just today
+
+If pose leaked into collision, every gravity comparison since week 4 would
+secretly have been a gravity-*and*-posture comparison.
+
+The separation isn't this week's lesson. It's a constraint the whole course
+has depended on since week 4.
+
+---
+
+## Across the three presets
+
+| Preset  | Physics feel                  | A pose that could match it       |
+| ------- | ------------------------------ | --------------------------------- |
+| Floaty  | slow fall, easy mid-air correction | loose arm swing, soft landing |
+| Heavy   | fast fall, committed direction | tucked limbs, hard compression    |
+| Precise | moderate fall, locked direction | minimal swing, controlled settle |
+
+These pairings are a starting point, not a rule — the posture comparison
+tool exists so you can test your own.
+
+---
+
+{/* _class: banner */}
+
+## Exercise
+
+In the Jump Lab's posture comparison, hold one trajectory fixed and design a
+pose for each of the three presets. Justify each choice in one sentence, on
+the same fixed path.
