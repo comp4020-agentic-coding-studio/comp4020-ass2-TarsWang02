@@ -58,7 +58,11 @@ export function stepFrame(
       next = mode === "immediate" ? launch(next, motion.launchSpeed) : { ...next, phase: "charging", chargeMs: 0 };
     }
   } else if (next.phase === "charging") {
-    next.vx = 0;
+    // Charging must not force a stop: an auto-runner (or a player holding a
+    // direction) keeps moving at the same speed as grounded, so charged and
+    // immediate jumps can be compared on the same moving approach rather
+    // than immediate always running and charged always freezing in place.
+    next.vx = input.moveX * motion.walkSpeed;
     if (input.jumpHeld) {
       next.chargeMs = Math.min(motion.chargeTimeMs, next.chargeMs + dt * 1000);
     }
