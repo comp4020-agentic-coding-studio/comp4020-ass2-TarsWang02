@@ -255,7 +255,7 @@ import { withBase } from "astro-theme-university/url";
   import { createInputController } from "../lib/jump/input";
   import { createLiveLoop } from "../lib/jump/loop";
   import { DEFAULT_MOTION, DEFAULT_POSE } from "../lib/jump/presets";
-  import { drawScene, makeViewport, readTheme } from "../lib/jump/renderer";
+  import { drawScene, followCharacterVertically, makeViewport, readTheme } from "../lib/jump/renderer";
   import { readPreference, writePreference } from "../lib/jump/storage";
   import type { Field, JumpMode, TrialResult } from "../lib/jump/types";
 
@@ -316,7 +316,7 @@ import { withBase } from "astro-theme-university/url";
 
   const input = createInputController(focusRegion, { left: leftButton, right: rightButton, jump: jumpButton });
 
-  const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
+  const viewport = makeViewport(canvas.width, canvas.height, 95, canvas.height - 40, 0);
 
   let stage: Stage = "try-immediate";
 
@@ -426,6 +426,7 @@ import { withBase } from "astro-theme-university/url";
     const state = loop.getState();
     const theme = readTheme(canvas!);
     viewport.cameraX = state.x;
+    followCharacterVertically(viewport, state, 1);
     drawScene(ctx!, { state, pose: DEFAULT_POSE, field: fieldForStage(stage), viewport, theme, characterWorldHeight: 1 });
     requestAnimationFrame(render);
   }

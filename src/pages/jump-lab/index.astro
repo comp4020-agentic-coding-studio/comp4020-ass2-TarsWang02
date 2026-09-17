@@ -540,7 +540,7 @@ import { siteConfig } from "../../site-config";
   import { createInputController } from "../../lib/jump/input";
   import { createLiveLoop, LIVE_LOOP_DT } from "../../lib/jump/loop";
   import { DEFAULT_MOTION, getPreset, PRESETS } from "../../lib/jump/presets";
-  import { drawScene, makeViewport, readTheme } from "../../lib/jump/renderer";
+  import { drawScene, followCharacterVertically, makeViewport, readTheme } from "../../lib/jump/renderer";
   import { readPreference, writePreference } from "../../lib/jump/storage";
   import { decodeReplayLink, encodeReplayLink } from "../../lib/jump/replay";
   import { runTrial } from "../../lib/jump/engine";
@@ -718,7 +718,7 @@ import { siteConfig } from "../../site-config";
 
     const field = flatField();
     const input = createInputController(focusRegion, { left: leftButton, right: rightButton, jump: jumpButton });
-    const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
+    const viewport = makeViewport(canvas.width, canvas.height, 95, canvas.height - 40, 0);
 
     const shorthandMode: JumpMode | null = urlModeParam === "immediate" || urlModeParam === "charged" ? urlModeParam : null;
     let mode: JumpMode =
@@ -840,6 +840,8 @@ import { siteConfig } from "../../site-config";
       syncPendingMotion();
       const state = loop.getState();
       const theme = readTheme(canvas);
+      viewport.cameraX = state.x;
+      followCharacterVertically(viewport, state, 1);
       drawScene(ctx!, { state, pose: NEUTRAL_POSE, field, viewport, theme, characterWorldHeight: 1 });
       requestAnimationFrame(render);
     }
@@ -945,8 +947,9 @@ import { siteConfig } from "../../site-config";
 
     const field = flatField();
     const input = createInputController(focusRegion, { left: leftButton, right: rightButton, jump: jumpButton });
-    const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
-    const replayViewport = makeViewport(canvasA.width, canvasA.height, 90, canvasA.height - 30, 0);
+    const viewport = makeViewport(canvas.width, canvas.height, 95, canvas.height - 40, 0);
+    const replayViewportA = makeViewport(canvasA.width, canvasA.height, 125, canvasA.height - 30, 0);
+    const replayViewportB = makeViewport(canvasB.width, canvasB.height, 125, canvasB.height - 30, 0);
 
     let mode: JumpMode = "immediate";
     let recording = false;
@@ -1111,6 +1114,8 @@ import { siteConfig } from "../../site-config";
       syncPendingMotion();
       const state = loop.getState();
       const theme = readTheme(canvas);
+      viewport.cameraX = state.x;
+      followCharacterVertically(viewport, state, 1);
       drawScene(ctx!, { state, pose: NEUTRAL_POSE, field, viewport, theme, characterWorldHeight: 1 });
       requestAnimationFrame(render);
     }
@@ -1150,11 +1155,15 @@ import { siteConfig } from "../../site-config";
       const theme = readTheme(canvasA);
       if (framesA.length > 0) {
         const stateA = framesA[Math.min(playbackFrame, framesA.length - 1)];
-        drawScene(ctxA!, { state: stateA, pose: NEUTRAL_POSE, field, viewport: replayViewport, theme, characterWorldHeight: 1 });
+        replayViewportA.cameraX = stateA.x;
+        followCharacterVertically(replayViewportA, stateA, 1);
+        drawScene(ctxA!, { state: stateA, pose: NEUTRAL_POSE, field, viewport: replayViewportA, theme, characterWorldHeight: 1 });
       }
       if (framesB.length > 0) {
         const stateB = framesB[Math.min(playbackFrame, framesB.length - 1)];
-        drawScene(ctxB!, { state: stateB, pose: NEUTRAL_POSE, field, viewport: replayViewport, theme, characterWorldHeight: 1 });
+        replayViewportB.cameraX = stateB.x;
+        followCharacterVertically(replayViewportB, stateB, 1);
+        drawScene(ctxB!, { state: stateB, pose: NEUTRAL_POSE, field, viewport: replayViewportB, theme, characterWorldHeight: 1 });
       }
       if (playbackFrame < playbackTotal - 1) {
         playbackFrame++;
@@ -1194,7 +1203,7 @@ import { siteConfig } from "../../site-config";
       armSwing.value = String(defaultPose.armSwing);
       legTuck.value = String(defaultPose.legTuck);
       landingCompression.value = String(defaultPose.landingCompression);
-      const viewport = makeViewport(canvas.width, canvas.height, 90, canvas.height - 30, 0);
+      const viewport = makeViewport(canvas.width, canvas.height, 125, canvas.height - 30, 0);
 
       return {
         draw(frameIndex: number) {
@@ -1205,6 +1214,8 @@ import { siteConfig } from "../../site-config";
             landingCompression: Number(landingCompression.value),
           };
           const theme = readTheme(canvas);
+          viewport.cameraX = state.x;
+          followCharacterVertically(viewport, state, 1);
           drawScene(ctx, { state, pose, field, viewport, theme, characterWorldHeight: 1 });
         },
       };

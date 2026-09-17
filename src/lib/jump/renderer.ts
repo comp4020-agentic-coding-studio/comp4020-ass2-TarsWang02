@@ -103,6 +103,7 @@ export interface Viewport {
   pixelsPerUnit: number;
   groundYPixel: number;
   cameraX: number;
+  cameraY: number;
 }
 
 export function makeViewport(
@@ -111,16 +112,38 @@ export function makeViewport(
   pixelsPerUnit: number,
   groundYPixel: number,
   cameraX = 0,
+  cameraY = 0,
 ): Viewport {
-  return { canvasWidth, canvasHeight, pixelsPerUnit, groundYPixel, cameraX };
+  return { canvasWidth, canvasHeight, pixelsPerUnit, groundYPixel, cameraX, cameraY };
 }
 
 /** World units are y-up with groundY = 0; canvas pixels are y-down. */
 export function worldToScreen(viewport: Viewport, x: number, y: number): Point {
   return {
     x: viewport.canvasWidth / 2 + (x - viewport.cameraX) * viewport.pixelsPerUnit,
-    y: viewport.groundYPixel - y * viewport.pixelsPerUnit,
+    y: viewport.groundYPixel - (y - viewport.cameraY) * viewport.pixelsPerUnit,
   };
+}
+
+// Top of the head above the character's origin, in local character-space units
+// (see humanoidGeometry above) — used to keep the whole character in frame.
+const HEAD_TOP_RATIO = HEAD_CENTER_Y + HEAD_SIZE / 2;
+
+/**
+ * Pans the camera up just enough to keep the character's head clear of the
+ * canvas top, and no further — the ground stays pinned at groundYPixel for
+ * every ordinary jump, and only very tall jumps (extreme gravity/launch-speed
+ * combinations) ever cause a pan. Rendering-only: never consulted by physics.
+ */
+export function followCharacterVertically(
+  viewport: Viewport,
+  state: { y: number },
+  characterWorldHeight: number,
+  topMarginPixels = 24,
+): void {
+  const headTopWorldY = state.y + HEAD_TOP_RATIO * characterWorldHeight;
+  const safeTopWorldY = (viewport.groundYPixel - topMarginPixels) / viewport.pixelsPerUnit;
+  viewport.cameraY = Math.max(0, headTopWorldY - safeTopWorldY);
 }
 
 export interface RenderTheme {
