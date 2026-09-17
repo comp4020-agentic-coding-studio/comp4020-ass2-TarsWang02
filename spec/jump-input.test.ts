@@ -10,6 +10,7 @@ import { createInputController } from "../src/lib/jump/input";
 function createFakeElement() {
   const listeners = new Map<string, Set<(e: any) => void>>();
   return {
+    focus() {},
     addEventListener(type: string, fn: (e: any) => void) {
       if (!listeners.has(type)) listeners.set(type, new Set());
       listeners.get(type)!.add(fn);

@@ -268,7 +268,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, opts: SceneOptions): vo
   const geometry = humanoidGeometry(state, pose);
   const scale = characterWorldHeight;
   const toScreen = (p: Point) => worldToScreen(viewport, state.x + p.x * scale, state.y + p.y * scale);
-  const limbWidth = Math.max(2, viewport.pixelsPerUnit * scale * 0.06);
+  const limbWidth = Math.max(2, viewport.pixelsPerUnit * scale * 0.075);
 
   drawLimb(ctx, toScreen, geometry.leftArm, theme.secondary, limbWidth);
   drawLimb(ctx, toScreen, geometry.rightArm, theme.secondary, limbWidth);
@@ -284,6 +284,28 @@ export function drawScene(ctx: CanvasRenderingContext2D, opts: SceneOptions): vo
   ctx.moveTo(torsoTop.x, torsoTop.y);
   ctx.lineTo(torsoBottom.x, torsoBottom.y);
   ctx.stroke();
+
+  // A tailored geometric suit, with a light centre seam and articulated boots.
+  const suitWidth = viewport.pixelsPerUnit * scale * 0.24;
+  ctx.fillStyle = theme.primary;
+  ctx.beginPath();
+  ctx.moveTo(torsoTop.x - suitWidth / 2, torsoTop.y);
+  ctx.lineTo(torsoTop.x + suitWidth / 2, torsoTop.y);
+  ctx.lineTo(torsoBottom.x + suitWidth * .36, torsoBottom.y);
+  ctx.lineTo(torsoBottom.x - suitWidth * .36, torsoBottom.y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = theme.bg;
+  ctx.lineWidth = Math.max(1, limbWidth * .22);
+  ctx.beginPath();
+  ctx.moveTo(torsoTop.x, torsoTop.y + 3);
+  ctx.lineTo(torsoBottom.x, torsoBottom.y - 3);
+  ctx.stroke();
+  for (const leg of [geometry.leftLeg, geometry.rightLeg]) {
+    const foot = toScreen(leg.end);
+    ctx.fillStyle = theme.text;
+    ctx.fillRect(foot.x - limbWidth * .7, foot.y - limbWidth * .6, limbWidth * 1.4, limbWidth * .65);
+  }
 
   const head = toScreen(geometry.head.center);
   const headPx = geometry.head.size * scale * viewport.pixelsPerUnit;
@@ -301,6 +323,9 @@ export function drawScene(ctx: CanvasRenderingContext2D, opts: SceneOptions): vo
   }
   ctx.fill();
 
+  // Dark inset visor keeps the face legible at small sizes.
+  ctx.fillStyle = theme.text;
+  ctx.fillRect(head.x - headPx * .38, head.y - headPx * .23, headPx * .76, headPx * .4);
   const eyeOffsetX = headPx * 0.18;
   const eyeOffsetY = headPx * 0.05;
   const eyeRadius = Math.max(1, headPx * 0.06);

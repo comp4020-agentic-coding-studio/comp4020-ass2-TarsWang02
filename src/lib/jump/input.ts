@@ -70,6 +70,7 @@ export function createInputController(container: HTMLElement, touchButtons: Touc
   function bindTouchButton(el: HTMLElement | null | undefined, set: (held: boolean) => void) {
     if (!el) return;
     const down = (e: PointerEvent) => {
+      container.focus({ preventScroll: true });
       set(true);
       e.preventDefault();
     };
