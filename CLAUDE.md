@@ -58,8 +58,10 @@ Respect the deployment base path. Use the existing astromotion slide integration
 - Immediate mode launches on press; holding permits greater height, release cuts
   ascent. Charged mode charges while held and launches on release with a cap.
 - Intro comparisons share maximum attainable height, horizontal speed and field.
-- Start on flat ground, then an easy gap. Missing resets promptly, keeps the last
-  trajectory and has no lives, failure counter, score or leaderboard.
+- Home's first three steps are single jumps on flat ground. Free play is an
+  auto-running obstacle course with irregularly (but reproducibly) spaced
+  blocks, cleared by jumping over them; a bump resets the run instantly, with
+  no lives, failure counter, score or leaderboard.
 - Home exposes basic controls, mode, last-jump metrics, reset and a lab link.
   Lab starts with presets, then expandable parameters. Edits show Custom with
   explicit restore. Jump mode is independent of all three presets.

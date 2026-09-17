@@ -59,7 +59,7 @@ import { withBase } from "astro-theme-university/url";
     >
       <JumpCanvas
         id="jump-trial-canvas"
-        ariaLabel="A jump trial: an articulated character on flat ground or a short gap, responding to your input"
+        ariaLabel="A jump trial: an articulated character on flat ground, jumping over blocks during free play"
         width={640}
         height={360}
       />
@@ -415,6 +415,17 @@ import { withBase } from "astro-theme-university/url";
     airtimeEl!.textContent = "—";
   }
 
+  // Every place that resets the free-play runner (a stage change, a mode
+  // switch, the Reset button) must clear all of running/hit/status together —
+  // leaving any one behind reproduces the exact stale-status bug this fixes.
+  function resetRunner(): void {
+    running = false;
+    hit = false;
+    spaceHeld = false;
+    spaceLatch = false;
+    runnerStatus.textContent = "Ready? Press Space or Jump.";
+  }
+
   function updateModeSwitchButtons(mode: JumpMode) {
     for (const button of modeButtons) {
       button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
@@ -422,11 +433,7 @@ import { withBase } from "astro-theme-university/url";
   }
 
   function setStage(next: Stage) {
-    running = false;
-    hit = false;
-    spaceHeld = false;
-    spaceLatch = false;
-    runnerStatus.textContent = "Ready? Press Space or Jump.";
+    resetRunner();
     loop.start();
     stage = next;
     for (const button of stageButtons) {
@@ -459,6 +466,7 @@ import { withBase } from "astro-theme-university/url";
     button.addEventListener("click", () => {
       const mode = button.dataset.mode as JumpMode;
       writePreference(PREFERENCE_KEY, mode);
+      resetRunner();
       loop.reconfigure({ mode });
       loop.reset();
       clearSummary();
@@ -467,12 +475,8 @@ import { withBase } from "astro-theme-university/url";
   }
 
   resetButton.addEventListener("click", () => {
-    running = false;
-    hit = false;
-    spaceHeld = false;
-    spaceLatch = false;
+    resetRunner();
     loop.start();
-    runnerStatus.textContent = "Ready? Press Space or Jump.";
     loop.reset();
     clearSummary();
     focusRegion.focus({ preventScroll: true });
