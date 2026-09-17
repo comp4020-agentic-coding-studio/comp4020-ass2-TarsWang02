@@ -274,6 +274,21 @@ import { siteConfig } from "../../site-config";
       >
     </div>
 
+    <div class="jump-lab-copy-row">
+      <button type="button" id="ab-lab-copy-replay" class="at-button at-button--outline at-button--small" disabled
+        >Copy replay link</button
+      >
+      <input
+        type="text"
+        id="ab-lab-copy-output"
+        class="jump-lab-copy-output"
+        readonly
+        hidden
+        aria-label="Replay link"
+      />
+      <span id="ab-lab-copy-status" aria-live="polite"></span>
+    </div>
+
     <div class="jump-lab-posture-grid">
       <div class="jump-lab-posture-column">
         <h3>Configuration A (recorded)</h3>
@@ -527,6 +542,7 @@ import { siteConfig } from "../../site-config";
   import { DEFAULT_MOTION, getPreset, PRESETS } from "../../lib/jump/presets";
   import { drawScene, makeViewport, readTheme } from "../../lib/jump/renderer";
   import { readPreference, writePreference } from "../../lib/jump/storage";
+  import { decodeReplayLink, encodeReplayLink } from "../../lib/jump/replay";
   import { runTrial } from "../../lib/jump/engine";
   import type { InputFrame, JumpMode, JumpState, MotionParams, PoseParams, TrialResult } from "../../lib/jump/types";
 
@@ -844,6 +860,9 @@ import { siteConfig } from "../../site-config";
     const slowPlaybackCheckbox = requireEl<HTMLInputElement>("ab-lab-slow-playback");
     const muteButton = requireEl<HTMLButtonElement>("ab-lab-mute");
     const statusEl = requireEl<HTMLElement>("ab-lab-status");
+    const copyReplayButton = requireEl<HTMLButtonElement>("ab-lab-copy-replay");
+    const copyOutput = requireEl<HTMLInputElement>("ab-lab-copy-output");
+    const copyStatus = requireEl<HTMLElement>("ab-lab-copy-status");
     const modeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("#ab-lab-mode-switch [data-mode]"));
 
     const gravitySlider = requireEl<HTMLInputElement>("ab-lab-gravity");
@@ -870,13 +889,16 @@ import { siteConfig } from "../../site-config";
     const coyoteTimeValue = requireEl<HTMLOutputElement>("ab-lab-coyote-time-value");
     const jumpBufferValue = requireEl<HTMLOutputElement>("ab-lab-jump-buffer-value");
 
-    gravitySlider.value = String(DEFAULT_MOTION.gravity);
-    launchSpeedSlider.value = String(DEFAULT_MOTION.launchSpeed);
-    airControlSlider.value = String(DEFAULT_MOTION.airControl);
-    walkSpeedSlider.value = String(DEFAULT_MOTION.walkSpeed);
-    releaseCutSlider.value = String(DEFAULT_MOTION.releaseCutFactor);
-    coyoteTimeSlider.value = String(DEFAULT_MOTION.coyoteTimeMs);
-    jumpBufferSlider.value = String(DEFAULT_MOTION.jumpBufferMs);
+    function applyMotionToSliders(motion: MotionParams) {
+      gravitySlider.value = String(motion.gravity);
+      launchSpeedSlider.value = String(motion.launchSpeed);
+      airControlSlider.value = String(motion.airControl);
+      walkSpeedSlider.value = String(motion.walkSpeed);
+      releaseCutSlider.value = String(motion.releaseCutFactor);
+      coyoteTimeSlider.value = String(motion.coyoteTimeMs);
+      jumpBufferSlider.value = String(motion.jumpBufferMs);
+      refreshSliderReadouts();
+    }
 
     function currentMotion(): MotionParams {
       return {
@@ -930,6 +952,7 @@ import { siteConfig } from "../../site-config";
     let recording = false;
     let recordedInputs: InputFrame[] = [];
     let configA: MotionParams | null = null;
+    let lastConfigB: MotionParams | null = null;
 
     for (const button of modeButtons) {
       button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
@@ -959,8 +982,10 @@ import { siteConfig } from "../../site-config";
       recording = false;
       recordedInputs = [];
       configA = null;
+      lastConfigB = null;
       recordButton.disabled = false;
       replayButton.disabled = true;
+      copyReplayButton.disabled = true;
       clearReplay();
       statusEl.textContent = message;
     }
@@ -1017,19 +1042,19 @@ import { siteConfig } from "../../site-config";
       recording = true;
       recordedInputs = [];
       configA = null;
+      lastConfigB = null;
       recordButton.disabled = true;
       replayButton.disabled = true;
+      copyReplayButton.disabled = true;
       clearReplay();
       loop.reconfigure({ motion: currentMotion() });
       loop.reset();
       statusEl.textContent = "Recording — perform a jump now.";
     });
 
-    replayButton.addEventListener("click", () => {
-      if (!configA || recordedInputs.length === 0) return;
-      const configB = currentMotion();
-      const resultA = runTrial(recordedInputs, mode, configA, field, LIVE_LOOP_DT);
-      const resultB = runTrial(recordedInputs, mode, configB, field, LIVE_LOOP_DT);
+    function runReplayWith(configAVal: MotionParams, configBVal: MotionParams, inputs: InputFrame[]) {
+      const resultA = runTrial(inputs, mode, configAVal, field, LIVE_LOOP_DT);
+      const resultB = runTrial(inputs, mode, configBVal, field, LIVE_LOOP_DT);
       framesA = resultA.frames;
       framesB = resultB.frames;
       playbackFrame = 0;
@@ -1040,6 +1065,29 @@ import { siteConfig } from "../../site-config";
       heightB.textContent = `${resultB.height.toFixed(2)} units`;
       displacementB.textContent = `${resultB.displacement.toFixed(2)} units`;
       airtimeB.textContent = resultB.complete ? `${(resultB.airtimeSeconds ?? 0).toFixed(2)} s` : "Incomplete";
+      lastConfigB = configBVal;
+      copyReplayButton.disabled = false;
+    }
+
+    replayButton.addEventListener("click", () => {
+      if (!configA || recordedInputs.length === 0) return;
+      const configB = currentMotion();
+      runReplayWith(configA, configB, recordedInputs);
+    });
+
+    copyReplayButton.addEventListener("click", async () => {
+      if (!configA || !lastConfigB || recordedInputs.length === 0) return;
+      const query = encodeReplayLink({ mode, configA, configB: lastConfigB, inputs: recordedInputs });
+      const url = `${location.origin}${location.pathname}?${query}`;
+      copyOutput.value = url;
+      copyOutput.hidden = false;
+      try {
+        await navigator.clipboard.writeText(url);
+        copyStatus.textContent = "Copied to clipboard.";
+      } catch {
+        copyOutput.select();
+        copyStatus.textContent = "Clipboard unavailable — the link is selected below; copy it manually.";
+      }
     });
 
     muteButton.addEventListener("click", () => {
@@ -1068,6 +1116,26 @@ import { siteConfig } from "../../site-config";
     }
     loop.start();
     requestAnimationFrame(render);
+
+    if (new URLSearchParams(location.search).has("replay")) {
+      const decoded = decodeReplayLink(location.search);
+      if (decoded) {
+        mode = decoded.mode;
+        for (const b of modeButtons) b.setAttribute("aria-pressed", String(b.dataset.mode === mode));
+        applyMotionToSliders(decoded.configB);
+        configA = decoded.configA;
+        recordedInputs = decoded.inputs;
+        loop.reconfigure({ mode, motion: decoded.configB });
+        loop.reset();
+        recordButton.disabled = false;
+        replayButton.disabled = false;
+        runReplayWith(decoded.configA, decoded.configB, decoded.inputs);
+        statusEl.textContent =
+          "Restored a saved comparison — press Replay to re-run it, or Record a new configuration A to start over.";
+      } else {
+        statusEl.textContent = "That replay link looked corrupted or incomplete — starting a fresh comparison instead.";
+      }
+    }
 
     // Playback only changes how many real ticks each simulated frame is held
     // for — the simulated frames themselves were fixed the moment Replay ran.

@@ -9,7 +9,7 @@ teachers:
   - idris-fenn
 spec:
   - a completed three-preset comparison table with real trial data
-  - a completed single-variable A/B comparison with a saved configuration link
+  - a completed single-variable A/B comparison with a saved replay link
   - the playtest observation and the revision it prompted, in draft form
 related:
   - lectures/week-12
@@ -26,7 +26,7 @@ including the week 12 lecture task's two-paragraph outline.
 1. In small groups, each person presents their three-preset table and A/B
    comparison. The group checks: are all three presets backed by real
    logged trials, not remembered numbers, and does the A/B comparison change
-   exactly one variable from a saved configuration link.
+   exactly one variable from a saved replay link.
 2. Read out your playtest observation from week 11 (or a new one if you
    haven't run it yet) and the revision it prompted. The group checks that
    the revision responds to something the observer actually wrote down, not

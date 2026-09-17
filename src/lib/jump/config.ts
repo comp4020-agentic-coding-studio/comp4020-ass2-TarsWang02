@@ -1,6 +1,6 @@
 import type { JumpMode, MotionParams } from "./types";
 
-const MOTION_KEYS: (keyof MotionParams)[] = [
+export const MOTION_KEYS: (keyof MotionParams)[] = [
   "gravity",
   "launchSpeed",
   "minLaunchSpeed",
