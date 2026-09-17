@@ -540,7 +540,7 @@ import { siteConfig } from "../../site-config";
   import { createInputController } from "../../lib/jump/input";
   import { createLiveLoop, LIVE_LOOP_DT } from "../../lib/jump/loop";
   import { DEFAULT_MOTION, getPreset, PRESETS } from "../../lib/jump/presets";
-  import { drawScene, followCharacterVertically, makeViewport, readTheme } from "../../lib/jump/renderer";
+  import { computeFixedFramingCameraY, drawScene, followCharacterVertically, makeViewport, readTheme } from "../../lib/jump/renderer";
   import { readPreference, writePreference } from "../../lib/jump/storage";
   import { decodeReplayLink, encodeReplayLink } from "../../lib/jump/replay";
   import { runTrial } from "../../lib/jump/engine";
@@ -1193,6 +1193,15 @@ import { siteConfig } from "../../site-config";
     const floaty = PRESETS.find((p) => p.key === "floaty")!.pose;
     const heavy = PRESETS.find((p) => p.key === "heavy")!.pose;
 
+    // Both bodies replay the exact same recorded trajectory, so they share one
+    // fixed camera derived from the trial's full height range up front, rather
+    // than each following its own body live. This guarantees Body A and Body B
+    // always render at identical scale, ground baseline and camera position —
+    // there is no per-side camera to drift, and no per-frame recomputation that
+    // could ever transiently clip on reset.
+    const sharedViewportTemplate = makeViewport(320, 300, 125, 300 - 30, 0);
+    const fixedCameraY = computeFixedFramingCameraY(frames, 1, sharedViewportTemplate);
+
     function setupBody(prefix: "a" | "b", defaultPose: PoseParams) {
       const canvas = requireEl<HTMLCanvasElement>(`posture-${prefix}-canvas`);
       const ctx = canvas.getContext("2d");
@@ -1203,7 +1212,7 @@ import { siteConfig } from "../../site-config";
       armSwing.value = String(defaultPose.armSwing);
       legTuck.value = String(defaultPose.legTuck);
       landingCompression.value = String(defaultPose.landingCompression);
-      const viewport = makeViewport(canvas.width, canvas.height, 125, canvas.height - 30, 0);
+      const viewport = makeViewport(canvas.width, canvas.height, 125, canvas.height - 30, 0, fixedCameraY);
 
       return {
         draw(frameIndex: number) {
@@ -1214,8 +1223,6 @@ import { siteConfig } from "../../site-config";
             landingCompression: Number(landingCompression.value),
           };
           const theme = readTheme(canvas);
-          viewport.cameraX = state.x;
-          followCharacterVertically(viewport, state, 1);
           drawScene(ctx, { state, pose, field, viewport, theme, characterWorldHeight: 1 });
         },
       };

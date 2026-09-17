@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState } from "../src/lib/jump/engine";
-import { humanoidGeometry, makeViewport, worldToScreen } from "../src/lib/jump/renderer";
+import { computeFixedFramingCameraY, humanoidGeometry, makeViewport, worldToScreen } from "../src/lib/jump/renderer";
 import type { JumpState, PoseParams } from "../src/lib/jump/types";
 
 const NEUTRAL_POSE: PoseParams = { armSwing: 0.6, legTuck: 0.5, landingCompression: 0.6 };
@@ -66,5 +66,58 @@ describe("humanoidGeometry — landing compression", () => {
     const idleGeometry = humanoidGeometry(idle, NEUTRAL_POSE);
     const landedGeometry = humanoidGeometry(justLanded, NEUTRAL_POSE);
     expect(landedGeometry.head.center.y).toBeLessThan(idleGeometry.head.center.y);
+  });
+});
+
+describe("computeFixedFramingCameraY — shared framing for side-by-side comparisons", () => {
+  const groundYPixel = 270; // canvas.height (300) - 30, matching the posture lab's canvases
+  const pixelsPerUnit = 125;
+  const viewport = makeViewport(320, 300, pixelsPerUnit, groundYPixel, 0);
+
+  it("stays at 0 when the whole trajectory fits under the safe margin", () => {
+    const lowFrames: JumpState[] = [
+      createInitialState(0, 0),
+      { ...createInitialState(0, 0.2) },
+      { ...createInitialState(0, 0) },
+    ];
+    expect(computeFixedFramingCameraY(lowFrames, 1, viewport)).toBe(0);
+  });
+
+  it("pans up exactly enough to keep the highest frame's head under the margin, with no extra slack", () => {
+    const apexY = 1.435; // matches the posture lab's canned charged-jump apex height
+    const frames: JumpState[] = [createInitialState(0, 0), createInitialState(0, apexY), createInitialState(0, 0)];
+    const cameraY = computeFixedFramingCameraY(frames, 1, viewport);
+    const headTopRatio = 0.9 + 0.22 / 2; // HEAD_CENTER_Y + HEAD_SIZE / 2, kept in sync with renderer.ts
+    const headTopWorldY = apexY + headTopRatio;
+    const safeTopWorldY = (groundYPixel - 24) / pixelsPerUnit;
+    expect(cameraY).toBeCloseTo(headTopWorldY - safeTopWorldY, 10);
+    // The resulting screen position of the head top must land exactly on the margin, never above it.
+    const headTopScreenY = groundYPixel - (headTopWorldY - cameraY) * pixelsPerUnit;
+    expect(headTopScreenY).toBeCloseTo(24, 6);
+  });
+
+  it("derives an identical camera offset for two independently-built viewports fed the same frames", () => {
+    const frames: JumpState[] = [createInitialState(0, 0), createInitialState(0, 2.1), createInitialState(0, 0)];
+    const viewportA = makeViewport(320, 300, 125, 270, 0);
+    const viewportB = makeViewport(320, 300, 125, 270, 0);
+    const cameraYA = computeFixedFramingCameraY(frames, 1, viewportA);
+    const cameraYB = computeFixedFramingCameraY(frames, 1, viewportB);
+    expect(cameraYA).toBe(cameraYB);
+  });
+
+  it("never clips: no frame's head top is ever above the safe margin once the fixed offset is applied", () => {
+    const frames: JumpState[] = Array.from({ length: 40 }, (_, i) => {
+      const t = i / 39;
+      // A smooth up-and-down arc peaking at 3 world units, well above the pan threshold.
+      const y = Math.sin(t * Math.PI) * 3;
+      return createInitialState(0, y);
+    });
+    const cameraY = computeFixedFramingCameraY(frames, 1, viewport);
+    const headTopRatio = 0.9 + 0.22 / 2;
+    for (const state of frames) {
+      const headTopWorldY = state.y + headTopRatio;
+      const headTopScreenY = groundYPixel - (headTopWorldY - cameraY) * pixelsPerUnit;
+      expect(headTopScreenY).toBeGreaterThanOrEqual(24 - 1e-9);
+    }
   });
 });

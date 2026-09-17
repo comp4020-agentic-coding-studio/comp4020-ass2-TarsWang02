@@ -146,6 +146,31 @@ export function followCharacterVertically(
   viewport.cameraY = Math.max(0, headTopWorldY - safeTopWorldY);
 }
 
+/**
+ * For side-by-side comparisons that replay the *same* recorded trajectory
+ * through two bodies (e.g. the posture lab): a single camera offset, derived
+ * once from the full trajectory's highest point, so both sides always share
+ * an identical scale, ground baseline and camera position. Unlike
+ * followCharacterVertically, this never recomputes per frame and never
+ * differs between two viewports fed the same frames — there is no
+ * independent per-side follow to drift apart or to flash a stale frame on
+ * reset.
+ */
+export function computeFixedFramingCameraY(
+  frames: readonly { y: number }[],
+  characterWorldHeight: number,
+  viewport: Pick<Viewport, "groundYPixel" | "pixelsPerUnit">,
+  topMarginPixels = 24,
+): number {
+  let maxHeadTopWorldY = -Infinity;
+  for (const state of frames) {
+    const headTopWorldY = state.y + HEAD_TOP_RATIO * characterWorldHeight;
+    if (headTopWorldY > maxHeadTopWorldY) maxHeadTopWorldY = headTopWorldY;
+  }
+  const safeTopWorldY = (viewport.groundYPixel - topMarginPixels) / viewport.pixelsPerUnit;
+  return Math.max(0, maxHeadTopWorldY - safeTopWorldY);
+}
+
 export interface RenderTheme {
   primary: string;
   secondary: string;
