@@ -153,6 +153,7 @@ import { siteConfig } from "../../site-config";
       <span id="gravity-lab-copy-status" aria-live="polite"></span>
     </div>
 
+    <div class="jump-lab-log-scroll">
     <table id="gravity-lab-log" class="jump-lab-log">
       <caption>Trial log (most recent first, up to 10 kept)</caption>
       <thead>
@@ -171,6 +172,7 @@ import { siteConfig } from "../../site-config";
       </thead>
       <tbody></tbody>
     </table>
+    </div>
   </section>
 
   <section id="ab-lab" aria-labelledby="ab-lab-heading">
@@ -473,6 +475,11 @@ import { siteConfig } from "../../site-config";
   .jump-lab-copy-row span {
     font-size: var(--at-font-size-sm);
     color: var(--at-text-secondary);
+  }
+
+  .jump-lab-log-scroll {
+    overflow-x: auto;
+    max-width: 100%;
   }
 
   .jump-lab-log {
