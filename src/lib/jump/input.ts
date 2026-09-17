@@ -24,11 +24,19 @@ export function createInputController(container: HTMLElement, touchButtons: Touc
   let leftHeld = false;
   let rightHeld = false;
   let jumpHeld = false;
+  // The fixed-step physics loop polls getFrame() at most once per ~16.67ms
+  // tick. A fast tap (mouse click or key tap) can press *and* release the
+  // jump button entirely between two polls, so `jumpHeld` alone can miss it.
+  // This latch remembers "jump was pressed since the last poll" and is
+  // consumed (cleared) the next time getFrame() runs, guaranteeing at least
+  // one poll observes jumpHeld === true and produces a real press edge.
+  let jumpPressedLatch = false;
 
   const clearAll = () => {
     leftHeld = false;
     rightHeld = false;
     jumpHeld = false;
+    jumpPressedLatch = false;
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -40,6 +48,7 @@ export function createInputController(container: HTMLElement, touchButtons: Touc
       e.preventDefault();
     } else if (JUMP_KEYS.has(e.code)) {
       jumpHeld = true;
+      jumpPressedLatch = true;
       e.preventDefault();
     }
   };
@@ -80,12 +89,15 @@ export function createInputController(container: HTMLElement, touchButtons: Touc
   });
   bindTouchButton(touchButtons.jump, (held) => {
     jumpHeld = held;
+    if (held) jumpPressedLatch = true;
   });
 
   return {
     getFrame(): InputFrame {
       const moveX = leftHeld === rightHeld ? 0 : leftHeld ? -1 : 1;
-      return { moveX, jumpHeld };
+      const effectiveJumpHeld = jumpHeld || jumpPressedLatch;
+      jumpPressedLatch = false;
+      return { moveX, jumpHeld: effectiveJumpHeld };
     },
     destroy() {
       container.removeEventListener("keydown", onKeyDown);
