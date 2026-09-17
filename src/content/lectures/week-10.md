@@ -27,7 +27,7 @@ that parameter *and* whatever your hands did differently the second time?
 
 ## Experiment
 
-Open the Jump Lab's A/B comparison. Record configuration A, then change
+Open the [Jump Lab's A/B comparison](/jump-lab/#ab-lab). Record configuration A, then change
 exactly one parameter and press replay. Both A and B run the identical
 recorded input trace — the same held keys, at the same frame, for the same
 duration — through two different configurations. Now imagine trying the

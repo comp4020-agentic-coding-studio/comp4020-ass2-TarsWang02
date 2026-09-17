@@ -27,8 +27,8 @@ change even if the *path* through space doesn't move at all.
 
 ## Experiment
 
-Open the Jump Lab's posture comparison and load the same fixed trajectory
-into both bodies. Push one body's arm swing and landing compression high and
+Open the [Jump Lab's posture comparison](/jump-lab/#posture-lab) and load
+the same fixed trajectory into both bodies. Push one body's arm swing and landing compression high and
 the other's low, leaving the trajectory untouched. Watch both side by side.
 The paths are identical — you could overlay them and they'd match exactly —
 but one body reads as loose and reactive, the other as stiff and

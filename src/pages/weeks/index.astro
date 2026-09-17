@@ -67,7 +67,8 @@ const phaseIntro: Record<(typeof coursePhases)[number]["key"], string> = {
                     <>
                       {" · "}
                       <a href={withBase(`/assessments/${assessment.id}/`)} class="assessment-tag">
-                        {assessment.data.title} due · {assessment.data.weight}%
+                        {assessment.data.title} due {formatCourseDate(assessment.data.due)} ·{" "}
+                        {assessment.data.weight}%
                       </a>
                     </>
                   )}
