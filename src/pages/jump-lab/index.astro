@@ -47,6 +47,7 @@ import { siteConfig } from "../../site-config";
         >Restore preset</button
       >
     </div>
+    <p id="gravity-lab-compare-hint" class="jump-lab-preset-status" hidden></p>
 
     <details id="gravity-lab-advanced" open>
       <summary>Advanced parameters</summary>
@@ -559,6 +560,7 @@ import { siteConfig } from "../../site-config";
     );
     const presetStatus = requireEl<HTMLElement>("gravity-lab-preset-status");
     const presetRestoreButton = requireEl<HTMLButtonElement>("gravity-lab-preset-restore");
+    const compareHint = requireEl<HTMLElement>("gravity-lab-compare-hint");
     const copyButton = requireEl<HTMLButtonElement>("gravity-lab-copy-config");
     const copyOutput = requireEl<HTMLInputElement>("gravity-lab-copy-output");
     const copyStatus = requireEl<HTMLElement>("gravity-lab-copy-status");
@@ -587,7 +589,17 @@ import { siteConfig } from "../../site-config";
     const coyoteTimeValue = requireEl<HTMLOutputElement>("gravity-lab-coyote-time-value");
     const jumpBufferValue = requireEl<HTMLOutputElement>("gravity-lab-jump-buffer-value");
 
+    // A full numeric configuration (from Copy configuration) always wins. Failing
+    // that, honor the short "a"/"b"/"mode" preset-comparison link format used by
+    // assessment briefs (e.g. ?a=floaty&b=precise&mode=immediate): "a" loads
+    // directly, "b" is surfaced as a one-click preset switch for the second jump.
+    const searchParams = new URLSearchParams(location.search);
     const urlConfig = decodeMotionConfig(location.search);
+    const presetAKey = searchParams.get("a");
+    const presetBKey = searchParams.get("b");
+    const urlModeParam = searchParams.get("mode");
+    const presetA = !urlConfig && presetAKey ? getPreset(presetAKey) : undefined;
+    const presetB = presetBKey ? getPreset(presetBKey) : undefined;
 
     function applyMotionToSliders(motion: MotionParams) {
       gravitySlider.value = String(motion.gravity);
@@ -602,7 +614,7 @@ import { siteConfig } from "../../site-config";
     }
 
     let fixedExtras = { minLaunchSpeed: DEFAULT_MOTION.minLaunchSpeed, chargeTimeMs: DEFAULT_MOTION.chargeTimeMs };
-    applyMotionToSliders(urlConfig?.motion ?? DEFAULT_MOTION);
+    applyMotionToSliders(urlConfig?.motion ?? presetA?.motion ?? DEFAULT_MOTION);
 
     function currentSliderMotion(): MotionParams {
       return {
@@ -628,8 +640,8 @@ import { siteConfig } from "../../site-config";
     }
     refreshSliderReadouts();
 
-    let activePresetKey: string | null = null;
-    let lastPresetKey: string | null = null;
+    let activePresetKey: string | null = presetA?.key ?? null;
+    let lastPresetKey: string | null = presetA?.key ?? null;
 
     function setPresetStatus() {
       for (const button of presetButtons) {
@@ -647,6 +659,11 @@ import { siteConfig } from "../../site-config";
       }
     }
     setPresetStatus();
+
+    if (presetB && presetB.key !== presetA?.key) {
+      compareHint.hidden = false;
+      compareHint.textContent = `Jump B for this comparison: ${presetB.label} — click its preset button above when you're ready to run Jump B's trials.`;
+    }
 
     for (const button of presetButtons) {
       button.addEventListener("click", () => {
@@ -680,7 +697,9 @@ import { siteConfig } from "../../site-config";
     const input = createInputController(focusRegion, { left: leftButton, right: rightButton, jump: jumpButton });
     const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
 
-    let mode: JumpMode = urlConfig?.mode ?? (readPreference(GRAVITY_MODE_KEY) === "charged" ? "charged" : "immediate");
+    const shorthandMode: JumpMode | null = urlModeParam === "immediate" || urlModeParam === "charged" ? urlModeParam : null;
+    let mode: JumpMode =
+      urlConfig?.mode ?? shorthandMode ?? (readPreference(GRAVITY_MODE_KEY) === "charged" ? "charged" : "immediate");
     let trialCount = 0;
     let currentTrialMotion: MotionParams = currentSliderMotion();
 
