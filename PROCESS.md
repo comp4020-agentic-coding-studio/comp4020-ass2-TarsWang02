@@ -59,4 +59,55 @@ verification script stealing keyboard focus by calling `.fill()` on a slider
 outside the playfield's focus region — the app's own focus-scoped input
 handling was working correctly, and I fixed the script rather than the app.
 
+## A later bug-fix and polish pass
+
+A second round of real-browser use surfaced problems the first pass's checks
+hadn't caught, because they only show up under actual play rather than in a
+build or an axe scan.
+[`b5db334`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/b5db334)
+fixes quick mouse clicks on the home page's Jump button silently producing no
+recorded trial: the fixed-timestep loop polled input once per frame, so a
+press-and-release that both happened between two polls was never seen at
+all — reproduced first with a fast synthetic click before touching any code,
+fixed with edge-latching in `src/lib/jump/input.ts` so a same-frame
+press-then-release still registers, and covered with regression tests for
+sub-frame presses.
+[`e2b1229`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/e2b1229)
+closes the A/B lab's submission loop with a "Copy replay link" that encodes
+both configurations' parameters, the input mode and the exact recorded input
+trace into the URL, so pasting it into a new tab restores and can replay the
+identical comparison — verified by actually copying the link, opening it in a
+fresh browser context, and checking the replayed numbers matched the
+original run exactly.
+[`48dd86b`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/48dd86b)
+reorders the home page into try-immediate, try-charged, choose-a-preference,
+free-play, so a first-time visitor sees only the one control relevant to
+their current step instead of every mode switch and preference button at
+once, while keeping skip/step-back/replay available throughout.
+
+The fourth commit,
+[`18b0c88`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/18b0c88),
+addresses the character reading as too small to see arm swing, leg tuck or
+landing compression. Raising the pixels-per-world-unit scale on its own would
+have clipped the tallest jumps the gravity/launch-speed sliders can produce,
+so `followCharacterVertically` was added to `renderer.ts` as a render-only
+camera pan that only engages when a jump would otherwise carry the head above
+the canvas — physics and recorded measurements are untouched, only what's
+drawn. The same pass added horizontal camera-follow to the Jump Lab's
+canvases, which had none and could carry a fast-walking character off-screen
+within a second, copying the pattern already used on the home page. Checked
+in a real browser: bigger, clearer characters on every canvas; an extreme
+low-gravity/high-launch-speed jump correctly stays in frame; sustained fast
+walking stays centred; the existing input, replay and onboarding checks all
+re-ran clean afterward.
+
+Last,
+[`88542dd`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/88542dd)
+fixes the weeks table showing each week's lecture date directly beside
+"<assessment> due · N%" text, which read as if that lecture date were the due
+date. The assessment tag now shows its own `due` field instead, matching what
+the assessment's own page already says. The same commit also links week 7's
+and week 10's "open the Jump Lab's ... comparison" instructions straight to
+the matching lab section, matching weeks 3-6, which already did this.
+
 `pnpm check` and `pnpm check:evidence` are both green as of this account.
