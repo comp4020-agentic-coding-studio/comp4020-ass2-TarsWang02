@@ -1,0 +1,29 @@
+---
+interface Props {
+  id: string;
+  ariaLabel: string;
+  width?: number;
+  height?: number;
+}
+
+const { id, ariaLabel, width = 640, height = 360 } = Astro.props;
+---
+
+<canvas id={id} width={width} height={height} role="img" aria-label={ariaLabel} class="jump-canvas"></canvas>
+
+<style>
+  .jump-canvas {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    border: 1px solid var(--at-border);
+    border-radius: var(--at-border-radius);
+    background: var(--at-bg-alt);
+    display: block;
+  }
+
+  .jump-canvas:focus-visible {
+    outline: 2px solid var(--at-accent);
+    outline-offset: 2px;
+  }
+</style>

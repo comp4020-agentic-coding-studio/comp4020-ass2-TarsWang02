@@ -2,8 +2,10 @@
 import Card from "astro-theme-university/components/Card.astro";
 import CardGrid from "astro-theme-university/components/CardGrid.astro";
 import ContentLayout from "astro-theme-university/layouts/ContentLayout.astro";
+import JumpCanvas from "../components/jump/JumpCanvas.astro";
 import { courseMeta } from "../course-config";
 import { sessionLabels, siteConfig } from "../site-config";
+import { withBase } from "astro-theme-university/url";
 ---
 
 <ContentLayout
@@ -14,6 +16,96 @@ import { sessionLabels, siteConfig } from "../site-config";
   <ul class="course-tags" aria-label="Course tags">
     {courseMeta.tags.map((tag) => <li>{tag}</li>)}
   </ul>
+
+  <section id="jump-trial" aria-labelledby="jump-trial-heading">
+    <h2 id="jump-trial-heading">Try a jump</h2>
+    <p>
+      Every idea in this course starts with the same jump. Try it below —
+      immediate first, then charged — then say which you'd rather play with,
+      and move on to free play. Nothing here has lives, a score or a way to
+      lose; a miss just resets you to the start.
+    </p>
+
+    <div class="jump-trial-stages" role="group" aria-label="Trial stage">
+      <button type="button" data-stage="try-immediate" class="at-button at-button--outline at-button--small" aria-pressed="true">
+        1. Try immediate
+      </button>
+      <button type="button" data-stage="try-charged" class="at-button at-button--outline at-button--small" aria-pressed="false">
+        2. Try charged
+      </button>
+      <button type="button" data-stage="preference" class="at-button at-button--outline at-button--small" aria-pressed="false">
+        3. Your preference
+      </button>
+      <button type="button" data-stage="free-play" class="at-button at-button--outline at-button--small" aria-pressed="false">
+        4. Free play
+      </button>
+    </div>
+
+    <p id="jump-trial-stage-description" aria-live="polite"></p>
+
+    <div id="jump-trial-preference-choice" hidden>
+      <button type="button" data-preference="immediate" class="at-button">I prefer Immediate</button>
+      <button type="button" data-preference="charged" class="at-button">I prefer Charged</button>
+    </div>
+
+    <div
+      id="jump-trial-focus-region"
+      class="jump-trial-playfield"
+      tabindex="0"
+      aria-label="Jump trial playfield. Use left and right arrow keys or A and D to move, and space to jump."
+    >
+      <JumpCanvas
+        id="jump-trial-canvas"
+        ariaLabel="A jump trial: an articulated character on flat ground or a short gap, responding to your input"
+        width={640}
+        height={360}
+      />
+    </div>
+
+    <div class="jump-touch-controls">
+      <button type="button" id="jump-trial-left" class="at-button at-button--large" aria-label="Move left">◀</button>
+      <button type="button" id="jump-trial-jump" class="at-button at-button--large" aria-label="Jump">Jump</button>
+      <button type="button" id="jump-trial-right" class="at-button at-button--large" aria-label="Move right"
+        >▶</button
+      >
+    </div>
+
+    <div id="jump-trial-mode-switch" class="jump-mode-switch" hidden>
+      <span>Mode:</span>
+      <button type="button" data-mode="immediate" class="at-button at-button--outline at-button--small" aria-pressed="false"
+        >Immediate</button
+      >
+      <button type="button" data-mode="charged" class="at-button at-button--outline at-button--small" aria-pressed="false"
+        >Charged</button
+      >
+    </div>
+
+    <div class="jump-trial-readout">
+      <dl id="jump-trial-metrics" class="jump-trial-metrics">
+        <div><dt>Height</dt><dd id="metric-height">—</dd></div>
+        <div><dt>Displacement</dt><dd id="metric-displacement">—</dd></div>
+        <div><dt>Airtime</dt><dd id="metric-airtime">—</dd></div>
+      </dl>
+      <div class="jump-trial-actions">
+        <button type="button" id="jump-trial-reset" class="at-button at-button--outline at-button--small"
+          >Reset</button
+        >
+        <button
+          type="button"
+          id="jump-trial-mute"
+          class="at-button at-button--ghost at-button--small"
+          aria-pressed="false"
+        >
+          Mute
+        </button>
+      </div>
+    </div>
+
+    <p>
+      Want the full set of controls — gravity, launch speed, air control and
+      posture? Head to the <a href={withBase("/jump-lab/")}>Jump Lab</a>.
+    </p>
+  </section>
 
   <h2>What you will do</h2>
   <p>
@@ -70,4 +162,274 @@ import { sessionLabels, siteConfig } from "../site-config";
     background: var(--at-bg-alt);
     font-size: 0.9rem;
   }
+
+  #jump-trial {
+    margin-block-end: 2.5rem;
+  }
+
+  .jump-trial-stages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-block-end: 0.75rem;
+  }
+
+  .jump-trial-stages button[aria-pressed="true"] {
+    background: var(--at-accent);
+    color: var(--at-on-accent);
+  }
+
+  #jump-trial-preference-choice {
+    display: flex;
+    gap: 0.75rem;
+    margin-block-end: 1rem;
+  }
+
+  .jump-trial-playfield {
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  .jump-trial-playfield:focus-visible {
+    outline: 2px solid var(--at-accent);
+    outline-offset: 4px;
+  }
+
+  .jump-touch-controls {
+    display: flex;
+    gap: 0.75rem;
+    margin-block: 0.75rem;
+  }
+
+  .jump-mode-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-end: 0.75rem;
+  }
+
+  .jump-mode-switch button[aria-pressed="true"] {
+    background: var(--at-accent);
+    color: var(--at-on-accent);
+  }
+
+  .jump-trial-readout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-block: 0.75rem 1rem;
+  }
+
+  .jump-trial-metrics {
+    display: flex;
+    gap: 1.5rem;
+    margin: 0;
+  }
+
+  .jump-trial-metrics div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .jump-trial-metrics dt {
+    font-size: var(--at-font-size-sm);
+    color: var(--at-text-secondary);
+  }
+
+  .jump-trial-metrics dd {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .jump-trial-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
 </style>
+
+<script>
+  import { createJumpAudio } from "../lib/jump/audio";
+  import { flatField, gapField } from "../lib/jump/field";
+  import { createInputController } from "../lib/jump/input";
+  import { createLiveLoop } from "../lib/jump/loop";
+  import { DEFAULT_MOTION, DEFAULT_POSE } from "../lib/jump/presets";
+  import { drawScene, makeViewport, readTheme } from "../lib/jump/renderer";
+  import { readPreference, writePreference } from "../lib/jump/storage";
+  import type { Field, JumpMode, TrialResult } from "../lib/jump/types";
+
+  const PREFERENCE_KEY = "jump-mode-preference";
+  const MUTE_KEY = "jump-audio-muted";
+  const HOME_GAP_START = 3;
+  const HOME_GAP_WIDTH = 1.2;
+  const HOME_GAP_REACH = 200;
+
+  type Stage = "try-immediate" | "try-charged" | "preference" | "free-play";
+  const STAGE_DESCRIPTIONS: Record<Stage, string> = {
+    "try-immediate": "Immediate mode: press Jump to launch. Hold it for more height; release early to cut the jump short.",
+    "try-charged": "Charged mode: hold Jump to charge, then release to launch. A longer hold reaches more height, up to a cap.",
+    preference: "Which did you prefer? Pick one — you can always change your mind later.",
+    "free-play": "Free play: a short gap now sits ahead. Walk into it, time a jump to clear it, and try both directions.",
+  };
+
+  const canvas = document.getElementById("jump-trial-canvas") as HTMLCanvasElement | null;
+  const focusRegion = document.getElementById("jump-trial-focus-region") as HTMLElement | null;
+  const stageButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-stage]"));
+  const stageDescriptionEl = document.getElementById("jump-trial-stage-description");
+  const preferenceChoiceEl = document.getElementById("jump-trial-preference-choice");
+  const modeSwitchEl = document.getElementById("jump-trial-mode-switch");
+  const modeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("#jump-trial-mode-switch [data-mode]"));
+  const leftButton = document.getElementById("jump-trial-left");
+  const rightButton = document.getElementById("jump-trial-right");
+  const jumpButton = document.getElementById("jump-trial-jump");
+  const resetButton = document.getElementById("jump-trial-reset");
+  const muteButton = document.getElementById("jump-trial-mute") as HTMLButtonElement | null;
+  const heightEl = document.getElementById("metric-height");
+  const displacementEl = document.getElementById("metric-displacement");
+  const airtimeEl = document.getElementById("metric-airtime");
+
+  if (
+    !canvas ||
+    !focusRegion ||
+    !stageDescriptionEl ||
+    !preferenceChoiceEl ||
+    !modeSwitchEl ||
+    !leftButton ||
+    !rightButton ||
+    !jumpButton ||
+    !resetButton ||
+    !muteButton ||
+    !heightEl ||
+    !displacementEl ||
+    !airtimeEl
+  ) {
+    throw new Error("Jump trial markup missing");
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("2D canvas context unavailable");
+
+  const audio = createJumpAudio(readPreference(MUTE_KEY) === "true");
+  muteButton.setAttribute("aria-pressed", String(audio.isMuted()));
+  muteButton.textContent = audio.isMuted() ? "Unmute" : "Mute";
+
+  const input = createInputController(focusRegion, { left: leftButton, right: rightButton, jump: jumpButton });
+
+  const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
+
+  let stage: Stage = "try-immediate";
+
+  function fieldForStage(s: Stage): Field {
+    return s === "free-play" ? gapField(HOME_GAP_START, HOME_GAP_WIDTH, HOME_GAP_REACH) : flatField();
+  }
+
+  function modeForStage(s: Stage): JumpMode {
+    if (s === "try-immediate") return "immediate";
+    if (s === "try-charged") return "charged";
+    const stored = readPreference(PREFERENCE_KEY);
+    return stored === "charged" ? "charged" : "immediate";
+  }
+
+  const loop = createLiveLoop(
+    { mode: modeForStage(stage), motion: DEFAULT_MOTION, field: fieldForStage(stage) },
+    {
+      getInput: () => input.getFrame(),
+      onTakeoff: () => audio.playTakeoff(),
+      onLanding: () => audio.playLanding(),
+      onTrialComplete: (summary) => showSummary(summary),
+    },
+  );
+
+  function showSummary(summary: Omit<TrialResult, "frames">) {
+    heightEl!.textContent = `${summary.height.toFixed(2)} units`;
+    displacementEl!.textContent = `${summary.displacement.toFixed(2)} units`;
+    airtimeEl!.textContent = summary.complete ? `${(summary.airtimeSeconds ?? 0).toFixed(2)} s` : "Incomplete";
+  }
+
+  function clearSummary() {
+    heightEl!.textContent = "—";
+    displacementEl!.textContent = "—";
+    airtimeEl!.textContent = "—";
+  }
+
+  function updateModeSwitchButtons(mode: JumpMode) {
+    for (const button of modeButtons) {
+      button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+    }
+  }
+
+  function setStage(next: Stage) {
+    stage = next;
+    for (const button of stageButtons) {
+      button.setAttribute("aria-pressed", String(button.dataset.stage === next));
+    }
+    stageDescriptionEl!.textContent = STAGE_DESCRIPTIONS[next];
+    preferenceChoiceEl!.hidden = next !== "preference";
+    modeSwitchEl!.hidden = next !== "free-play";
+
+    const mode = modeForStage(next);
+    loop.reconfigure({ mode, field: fieldForStage(next) });
+    loop.reset();
+    clearSummary();
+    updateModeSwitchButtons(mode);
+  }
+
+  for (const button of stageButtons) {
+    button.addEventListener("click", () => setStage(button.dataset.stage as Stage));
+  }
+
+  for (const button of preferenceChoiceEl.querySelectorAll<HTMLButtonElement>("[data-preference]")) {
+    button.addEventListener("click", () => {
+      const preference = button.dataset.preference as JumpMode;
+      writePreference(PREFERENCE_KEY, preference);
+      setStage("free-play");
+    });
+  }
+
+  for (const button of modeButtons) {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.mode as JumpMode;
+      writePreference(PREFERENCE_KEY, mode);
+      loop.reconfigure({ mode });
+      loop.reset();
+      clearSummary();
+      updateModeSwitchButtons(mode);
+    });
+  }
+
+  resetButton.addEventListener("click", () => {
+    loop.reset();
+    clearSummary();
+  });
+
+  muteButton.addEventListener("click", () => {
+    const next = !audio.isMuted();
+    audio.setMuted(next);
+    writePreference(MUTE_KEY, String(next));
+    muteButton!.setAttribute("aria-pressed", String(next));
+    muteButton!.textContent = next ? "Unmute" : "Mute";
+  });
+
+  let unlocked = false;
+  function unlockAudioOnce() {
+    if (unlocked) return;
+    unlocked = true;
+    audio.unlock();
+  }
+  focusRegion.addEventListener("keydown", unlockAudioOnce, { once: true });
+  focusRegion.addEventListener("pointerdown", unlockAudioOnce, { once: true });
+
+  setStage(stage);
+
+  function render() {
+    const state = loop.getState();
+    const theme = readTheme(canvas!);
+    viewport.cameraX = state.x;
+    drawScene(ctx!, { state, pose: DEFAULT_POSE, field: fieldForStage(stage), viewport, theme, characterWorldHeight: 1 });
+    requestAnimationFrame(render);
+  }
+
+  loop.start();
+  requestAnimationFrame(render);
+</script>

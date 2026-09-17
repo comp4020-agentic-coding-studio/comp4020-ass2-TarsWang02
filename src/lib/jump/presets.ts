@@ -63,3 +63,15 @@ export const PRESETS: JumpPreset[] = [
 export function getPreset(key: string): JumpPreset | undefined {
   return PRESETS.find((p) => p.key === key);
 }
+
+/** The Home page's single fixed baseline jump — Home never exposes tuning controls. */
+export const DEFAULT_MOTION: MotionParams = {
+  ...SHARED,
+  gravity: 14,
+  launchSpeed: 7,
+  airControl: 8,
+  releaseCutFactor: 0.6,
+  coyoteTimeMs: 100,
+};
+
+export const DEFAULT_POSE: PoseParams = { armSwing: 0.5, legTuck: 0.4, landingCompression: 0.5 };

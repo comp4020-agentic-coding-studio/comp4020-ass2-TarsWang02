@@ -1,106 +1,547 @@
 ---
 import ContentLayout from "astro-theme-university/layouts/ContentLayout.astro";
+import JumpCanvas from "../../components/jump/JumpCanvas.astro";
 import { siteConfig } from "../../site-config";
 ---
 
 <ContentLayout
   title="Jump Lab"
-  description="The shared jump engine: presets, expandable motion and pose controls, and A/B comparison — under construction."
+  description="Tune gravity, launch speed and air control with real measurements, and compare posture on an identical physical path. Presets and A/B replay arrive in a later stage."
   {...siteConfig}
 >
   <p>
-    The Jump Lab is being built in stages: the home trial and the
-    gravity/launch-speed experiment first, then presets and A/B replay. Below
-    is the shared engine driving the same articulated character through each
-    named preset, so you can see the physics and posture before the controls
-    arrive.
+    Two tools live here so far. The first lets you change the numbers behind
+    a jump and log what each change actually does. The second holds the
+    physical path fixed and only changes how the character looks in the air
+    — because posture is a cosmetic choice, never a physics one.
   </p>
-  <canvas
-    id="jump-preview"
-    width="720"
-    height="420"
-    role="img"
-    aria-label="A preview of the shared jump character cycling through the Floaty, Heavy, and Precise presets"
-    style="width: 100%; max-width: 720px; height: auto; border: 1px solid var(--at-border); border-radius: var(--at-border-radius); background: var(--at-bg-alt); display: block;"
-  ></canvas>
-  <p id="jump-preview-caption" style="color: var(--at-text-secondary); font-size: var(--at-font-size-sm);">
-    Preset: <strong id="jump-preview-preset-name"></strong> — <span id="jump-preview-preset-summary"></span>
-  </p>
+
+  <section id="gravity-lab" aria-labelledby="gravity-lab-heading">
+    <h2 id="gravity-lab-heading">Gravity and launch speed</h2>
+    <p>
+      Who is really in control while you're in the air? Adjust gravity,
+      launch speed, air control and ground speed, then jump — each change
+      applies to your <em>next</em> jump, never mid-air, and every completed
+      jump is logged below with the exact numbers it used.
+    </p>
+
+    <div class="jump-lab-controls">
+      <label>
+        Gravity
+        <input type="range" id="gravity-lab-gravity" min="4" max="26" step="1" />
+        <output id="gravity-lab-gravity-value"></output>
+      </label>
+      <label>
+        Launch speed
+        <input type="range" id="gravity-lab-launch-speed" min="3" max="10" step="0.5" />
+        <output id="gravity-lab-launch-speed-value"></output>
+      </label>
+      <label>
+        Air control
+        <input type="range" id="gravity-lab-air-control" min="0" max="16" step="1" />
+        <output id="gravity-lab-air-control-value"></output>
+      </label>
+      <label>
+        Ground speed
+        <input type="range" id="gravity-lab-walk-speed" min="2" max="8" step="0.5" />
+        <output id="gravity-lab-walk-speed-value"></output>
+      </label>
+    </div>
+
+    <div id="gravity-lab-mode-switch" class="jump-mode-switch">
+      <span>Mode:</span>
+      <button type="button" data-mode="immediate" class="at-button at-button--outline at-button--small" aria-pressed="true"
+        >Immediate</button
+      >
+      <button type="button" data-mode="charged" class="at-button at-button--outline at-button--small" aria-pressed="false"
+        >Charged</button
+      >
+    </div>
+
+    <div
+      id="gravity-lab-focus-region"
+      class="jump-trial-playfield"
+      tabindex="0"
+      aria-label="Gravity and launch speed playfield. Use left and right arrow keys or A and D to move, and space to jump."
+    >
+      <JumpCanvas
+        id="gravity-lab-canvas"
+        ariaLabel="A jump responding to the current gravity, launch speed, air control and ground speed settings"
+        width={640}
+        height={360}
+      />
+    </div>
+
+    <div class="jump-touch-controls">
+      <button type="button" id="gravity-lab-left" class="at-button at-button--large" aria-label="Move left"
+        >◀</button
+      >
+      <button type="button" id="gravity-lab-jump" class="at-button at-button--large" aria-label="Jump">Jump</button>
+      <button type="button" id="gravity-lab-right" class="at-button at-button--large" aria-label="Move right"
+        >▶</button
+      >
+    </div>
+
+    <div class="jump-trial-readout">
+      <dl class="jump-trial-metrics">
+        <div><dt>Height</dt><dd id="gravity-lab-metric-height">—</dd></div>
+        <div><dt>Displacement</dt><dd id="gravity-lab-metric-displacement">—</dd></div>
+        <div><dt>Airtime</dt><dd id="gravity-lab-metric-airtime">—</dd></div>
+      </dl>
+      <div class="jump-trial-actions">
+        <button type="button" id="gravity-lab-reset" class="at-button at-button--outline at-button--small"
+          >Reset</button
+        >
+        <button
+          type="button"
+          id="gravity-lab-mute"
+          class="at-button at-button--ghost at-button--small"
+          aria-pressed="false"
+        >
+          Mute
+        </button>
+      </div>
+    </div>
+
+    <table id="gravity-lab-log" class="jump-lab-log">
+      <caption>Trial log (most recent first, up to 10 kept)</caption>
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Gravity</th>
+          <th scope="col">Launch speed</th>
+          <th scope="col">Air control</th>
+          <th scope="col">Height</th>
+          <th scope="col">Displacement</th>
+          <th scope="col">Airtime</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section id="posture-lab" aria-labelledby="posture-lab-heading">
+    <h2 id="posture-lab-heading">Same path, different body</h2>
+    <p>
+      Body A and Body B share the exact same recorded jump — identical
+      takeoff, apex and landing. Only their arm swing, leg tuck and landing
+      compression differ, so any difference you see is posture, not physics.
+    </p>
+
+    <div class="jump-lab-posture-grid">
+      <div class="jump-lab-posture-column">
+        <h3>Body A</h3>
+        <JumpCanvas id="posture-a-canvas" ariaLabel="Body A on the shared recorded jump" width={320} height={300} />
+        <div class="jump-lab-controls">
+          <label>Arm swing <input type="range" id="posture-a-arm-swing" min="0" max="1" step="0.05" /></label>
+          <label>Leg tuck <input type="range" id="posture-a-leg-tuck" min="0" max="1" step="0.05" /></label>
+          <label
+            >Landing compression <input type="range" id="posture-a-landing-compression" min="0" max="1" step="0.05" /></label
+          >
+        </div>
+      </div>
+      <div class="jump-lab-posture-column">
+        <h3>Body B</h3>
+        <JumpCanvas id="posture-b-canvas" ariaLabel="Body B on the shared recorded jump" width={320} height={300} />
+        <div class="jump-lab-controls">
+          <label>Arm swing <input type="range" id="posture-b-arm-swing" min="0" max="1" step="0.05" /></label>
+          <label>Leg tuck <input type="range" id="posture-b-leg-tuck" min="0" max="1" step="0.05" /></label>
+          <label
+            >Landing compression <input type="range" id="posture-b-landing-compression" min="0" max="1" step="0.05" /></label
+          >
+        </div>
+      </div>
+    </div>
+
+    <button type="button" id="posture-lab-restart" class="at-button at-button--outline at-button--small"
+      >Restart</button
+    >
+  </section>
 </ContentLayout>
 
-<script>
-  import { runTrial } from "../../lib/jump/engine";
-  import { flatField } from "../../lib/jump/field";
-  import { PRESETS } from "../../lib/jump/presets";
-  import { drawScene, makeViewport, readTheme } from "../../lib/jump/renderer";
-  import type { InputFrame } from "../../lib/jump/types";
-
-  const canvas = document.getElementById("jump-preview") as HTMLCanvasElement | null;
-  const nameEl = document.getElementById("jump-preview-preset-name");
-  const summaryEl = document.getElementById("jump-preview-preset-summary");
-  if (!canvas || !nameEl || !summaryEl) throw new Error("Jump Lab preview markup missing");
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("2D canvas context unavailable");
-
-  const DT = 1 / 60;
-  const HOLD_SECONDS = 0.9;
-  const TRIAL_SECONDS = 3;
-  const PAUSE_SECONDS = 1.2;
-  const field = flatField();
-  // Floaty is the tallest preset (apex ~2.7 world units); at this scale and
-  // canvas height the apex plus the character's own height still clears the
-  // top of the canvas with room to spare.
-  const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  function buildInputs(): InputFrame[] {
-    const frameCount = Math.round(TRIAL_SECONDS / DT);
-    const heldFrames = Math.round(HOLD_SECONDS / DT);
-    const frames: InputFrame[] = [];
-    for (let i = 0; i < frameCount; i++) {
-      frames.push({ moveX: 0, jumpHeld: i < heldFrames });
-    }
-    return frames;
+<style>
+  #gravity-lab,
+  #posture-lab {
+    margin-block-end: 2.5rem;
   }
 
-  let presetIndex = 0;
-  let visible = !document.hidden;
-  document.addEventListener("visibilitychange", () => {
-    visible = !document.hidden;
-  });
+  .jump-lab-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-block-end: 0.75rem;
+  }
 
-  function playPreset() {
-    if (!visible) {
-      setTimeout(playPreset, 500);
-      return;
+  .jump-lab-controls label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: var(--at-font-size-sm);
+  }
+
+  .jump-mode-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-end: 0.75rem;
+  }
+
+  .jump-mode-switch button[aria-pressed="true"] {
+    background: var(--at-accent);
+    color: var(--at-on-accent);
+  }
+
+  .jump-trial-playfield {
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  .jump-trial-playfield:focus-visible {
+    outline: 2px solid var(--at-accent);
+    outline-offset: 4px;
+  }
+
+  .jump-touch-controls {
+    display: flex;
+    gap: 0.75rem;
+    margin-block: 0.75rem;
+  }
+
+  .jump-trial-readout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-block: 0.75rem 1rem;
+  }
+
+  .jump-trial-metrics {
+    display: flex;
+    gap: 1.5rem;
+    margin: 0;
+  }
+
+  .jump-trial-metrics div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .jump-trial-metrics dt {
+    font-size: var(--at-font-size-sm);
+    color: var(--at-text-secondary);
+  }
+
+  .jump-trial-metrics dd {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .jump-trial-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .jump-lab-log {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--at-font-size-sm);
+  }
+
+  .jump-lab-log caption {
+    text-align: left;
+    color: var(--at-text-secondary);
+    margin-block-end: 0.5rem;
+  }
+
+  .jump-lab-log th,
+  .jump-lab-log td {
+    padding: 0.35rem 0.6rem;
+    border-block-end: 1px solid var(--at-divider);
+    text-align: right;
+  }
+
+  .jump-lab-log th:first-child,
+  .jump-lab-log td:first-child {
+    text-align: left;
+  }
+
+  .jump-lab-posture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-block-end: 1rem;
+  }
+
+  .jump-lab-posture-column h3 {
+    margin-block-start: 0;
+  }
+</style>
+
+<script>
+  import { createJumpAudio } from "../../lib/jump/audio";
+  import { flatField } from "../../lib/jump/field";
+  import { createInputController } from "../../lib/jump/input";
+  import { createLiveLoop } from "../../lib/jump/loop";
+  import { DEFAULT_MOTION, PRESETS } from "../../lib/jump/presets";
+  import { drawScene, makeViewport, readTheme } from "../../lib/jump/renderer";
+  import { readPreference, writePreference } from "../../lib/jump/storage";
+  import { runTrial } from "../../lib/jump/engine";
+  import type { JumpMode, MotionParams, PoseParams, TrialResult } from "../../lib/jump/types";
+
+  const GRAVITY_MUTE_KEY = "gravity-lab-audio-muted";
+  const GRAVITY_MODE_KEY = "gravity-lab-mode";
+  const MAX_LOG_ROWS = 10;
+
+  function requireEl<T extends Element>(id: string): T {
+    const el = document.getElementById(id) as T | null;
+    if (!el) throw new Error(`Jump Lab markup missing #${id}`);
+    return el;
+  }
+
+  // --- Gravity & launch speed experiment ---------------------------------
+  (function setupGravityLab() {
+    const canvas = requireEl<HTMLCanvasElement>("gravity-lab-canvas");
+    const focusRegion = requireEl<HTMLElement>("gravity-lab-focus-region");
+    const leftButton = requireEl<HTMLElement>("gravity-lab-left");
+    const rightButton = requireEl<HTMLElement>("gravity-lab-right");
+    const jumpButton = requireEl<HTMLElement>("gravity-lab-jump");
+    const resetButton = requireEl<HTMLButtonElement>("gravity-lab-reset");
+    const muteButton = requireEl<HTMLButtonElement>("gravity-lab-mute");
+    const heightEl = requireEl<HTMLElement>("gravity-lab-metric-height");
+    const displacementEl = requireEl<HTMLElement>("gravity-lab-metric-displacement");
+    const airtimeEl = requireEl<HTMLElement>("gravity-lab-metric-airtime");
+    const logBody = requireEl<HTMLTableSectionElement>("gravity-lab-log").querySelector("tbody")!;
+    const modeButtons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("#gravity-lab-mode-switch [data-mode]"),
+    );
+
+    const gravitySlider = requireEl<HTMLInputElement>("gravity-lab-gravity");
+    const launchSpeedSlider = requireEl<HTMLInputElement>("gravity-lab-launch-speed");
+    const airControlSlider = requireEl<HTMLInputElement>("gravity-lab-air-control");
+    const walkSpeedSlider = requireEl<HTMLInputElement>("gravity-lab-walk-speed");
+    const gravityValue = requireEl<HTMLOutputElement>("gravity-lab-gravity-value");
+    const launchSpeedValue = requireEl<HTMLOutputElement>("gravity-lab-launch-speed-value");
+    const airControlValue = requireEl<HTMLOutputElement>("gravity-lab-air-control-value");
+    const walkSpeedValue = requireEl<HTMLOutputElement>("gravity-lab-walk-speed-value");
+
+    gravitySlider.value = String(DEFAULT_MOTION.gravity);
+    launchSpeedSlider.value = String(DEFAULT_MOTION.launchSpeed);
+    airControlSlider.value = String(DEFAULT_MOTION.airControl);
+    walkSpeedSlider.value = String(DEFAULT_MOTION.walkSpeed);
+
+    function currentSliderMotion(): MotionParams {
+      return {
+        ...DEFAULT_MOTION,
+        gravity: Number(gravitySlider.value),
+        launchSpeed: Number(launchSpeedSlider.value),
+        airControl: Number(airControlSlider.value),
+        walkSpeed: Number(walkSpeedSlider.value),
+      };
     }
-    const preset = PRESETS[presetIndex % PRESETS.length];
-    nameEl!.textContent = preset.label;
-    summaryEl!.textContent = preset.summary;
-    presetIndex++;
 
-    const trial = runTrial(buildInputs(), "charged", preset.motion, field, DT);
-    const theme = readTheme(canvas!);
+    function refreshSliderReadouts() {
+      gravityValue.textContent = gravitySlider.value;
+      launchSpeedValue.textContent = launchSpeedSlider.value;
+      airControlValue.textContent = airControlSlider.value;
+      walkSpeedValue.textContent = walkSpeedSlider.value;
+    }
+    refreshSliderReadouts();
 
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("2D canvas context unavailable");
+
+    const audio = createJumpAudio(readPreference(GRAVITY_MUTE_KEY) === "true");
+    muteButton.setAttribute("aria-pressed", String(audio.isMuted()));
+    muteButton.textContent = audio.isMuted() ? "Unmute" : "Mute";
+
+    const field = flatField();
+    const input = createInputController(focusRegion, { left: leftButton, right: rightButton, jump: jumpButton });
+    const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
+
+    let mode: JumpMode = readPreference(GRAVITY_MODE_KEY) === "charged" ? "charged" : "immediate";
+    let trialCount = 0;
+    let currentTrialMotion: MotionParams = currentSliderMotion();
+
+    for (const button of modeButtons) {
+      button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+    }
+
+    const loop = createLiveLoop(
+      { mode, motion: currentTrialMotion, field },
+      {
+        getInput: () => input.getFrame(),
+        onTakeoff: () => {
+          currentTrialMotion = currentSliderMotion();
+          audio.playTakeoff();
+        },
+        onLanding: () => {
+          audio.playLanding();
+        },
+        onTrialComplete: (summary) => {
+          heightEl.textContent = `${summary.height.toFixed(2)} units`;
+          displacementEl.textContent = `${summary.displacement.toFixed(2)} units`;
+          airtimeEl.textContent = summary.complete ? `${(summary.airtimeSeconds ?? 0).toFixed(2)} s` : "Incomplete";
+          logTrial(summary);
+        },
+      },
+    );
+
+    function logTrial(summary: Omit<TrialResult, "frames">) {
+      trialCount++;
+      const row = document.createElement("tr");
+      const cells = [
+        String(trialCount),
+        currentTrialMotion.gravity.toFixed(1),
+        currentTrialMotion.launchSpeed.toFixed(1),
+        currentTrialMotion.airControl.toFixed(1),
+        `${summary.height.toFixed(2)}`,
+        `${summary.displacement.toFixed(2)}`,
+        summary.complete ? `${(summary.airtimeSeconds ?? 0).toFixed(2)}` : "Incomplete",
+      ];
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.appendChild(cell);
+      }
+      logBody.insertBefore(row, logBody.firstChild);
+      while (logBody.children.length > MAX_LOG_ROWS) {
+        logBody.removeChild(logBody.lastChild!);
+      }
+    }
+
+    // Slider edits are only applied while grounded — never mid-air.
+    function syncPendingMotion() {
+      if (loop.getState().phase === "grounded") {
+        loop.reconfigure({ motion: currentSliderMotion() });
+      }
+    }
+    for (const slider of [gravitySlider, launchSpeedSlider, airControlSlider, walkSpeedSlider]) {
+      slider.addEventListener("input", () => {
+        refreshSliderReadouts();
+        syncPendingMotion();
+      });
+    }
+
+    for (const button of modeButtons) {
+      button.addEventListener("click", () => {
+        mode = button.dataset.mode as JumpMode;
+        writePreference(GRAVITY_MODE_KEY, mode);
+        for (const b of modeButtons) b.setAttribute("aria-pressed", String(b === button));
+        loop.reconfigure({ mode });
+        loop.reset();
+      });
+    }
+
+    resetButton.addEventListener("click", () => loop.reset());
+
+    muteButton.addEventListener("click", () => {
+      const next = !audio.isMuted();
+      audio.setMuted(next);
+      writePreference(GRAVITY_MUTE_KEY, String(next));
+      muteButton.setAttribute("aria-pressed", String(next));
+      muteButton.textContent = next ? "Unmute" : "Mute";
+    });
+
+    let unlocked = false;
+    const unlockOnce = () => {
+      if (unlocked) return;
+      unlocked = true;
+      audio.unlock();
+    };
+    focusRegion.addEventListener("keydown", unlockOnce, { once: true });
+    focusRegion.addEventListener("pointerdown", unlockOnce, { once: true });
+
+    function render() {
+      syncPendingMotion();
+      const state = loop.getState();
+      const theme = readTheme(canvas);
+      drawScene(ctx!, { state, pose: { armSwing: 0.5, legTuck: 0.4, landingCompression: 0.5 }, field, viewport, theme, characterWorldHeight: 1 });
+      requestAnimationFrame(render);
+    }
+
+    loop.start();
+    requestAnimationFrame(render);
+  })();
+
+  // --- Posture comparison --------------------------------------------------
+  (function setupPostureLab() {
+    const DT = 1 / 60;
+    const HOLD_SECONDS = 0.5;
+    const TRIAL_SECONDS = 2.5;
+    const PAUSE_SECONDS = 0.8;
+
+    const field = flatField();
+    const frameCount = Math.round(TRIAL_SECONDS / DT);
+    const heldFrames = Math.round(HOLD_SECONDS / DT);
+    const inputs = Array.from({ length: frameCount }, (_, i) => ({
+      moveX: 0 as const,
+      jumpHeld: i < heldFrames,
+    }));
+    const trial = runTrial(inputs, "charged", DEFAULT_MOTION, field, DT);
+    const frames = trial.frames;
+    const totalFrames = frames.length;
+
+    const floaty = PRESETS.find((p) => p.key === "floaty")!.pose;
+    const heavy = PRESETS.find((p) => p.key === "heavy")!.pose;
+
+    function setupBody(prefix: "a" | "b", defaultPose: PoseParams) {
+      const canvas = requireEl<HTMLCanvasElement>(`posture-${prefix}-canvas`);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("2D canvas context unavailable");
+      const armSwing = requireEl<HTMLInputElement>(`posture-${prefix}-arm-swing`);
+      const legTuck = requireEl<HTMLInputElement>(`posture-${prefix}-leg-tuck`);
+      const landingCompression = requireEl<HTMLInputElement>(`posture-${prefix}-landing-compression`);
+      armSwing.value = String(defaultPose.armSwing);
+      legTuck.value = String(defaultPose.legTuck);
+      landingCompression.value = String(defaultPose.landingCompression);
+      const viewport = makeViewport(canvas.width, canvas.height, 90, canvas.height - 30, 0);
+
+      return {
+        draw(frameIndex: number) {
+          const state = frames[Math.min(frameIndex, totalFrames - 1)];
+          const pose: PoseParams = {
+            armSwing: Number(armSwing.value),
+            legTuck: Number(legTuck.value),
+            landingCompression: Number(landingCompression.value),
+          };
+          const theme = readTheme(canvas);
+          drawScene(ctx, { state, pose, field, viewport, theme, characterWorldHeight: 1 });
+        },
+      };
+    }
+
+    const bodyA = setupBody("a", floaty);
+    const bodyB = setupBody("b", heavy);
+    const restartButton = requireEl<HTMLButtonElement>("posture-lab-restart");
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let frame = 0;
-    const totalFrames = trial.frames.length;
-    const step = () => {
+    let visible = !document.hidden;
+    document.addEventListener("visibilitychange", () => {
+      visible = !document.hidden;
+    });
+    restartButton.addEventListener("click", () => {
+      frame = 0;
+    });
+
+    function step() {
       if (!visible) {
         setTimeout(step, 500);
         return;
       }
-      const state = trial.frames[Math.min(frame, totalFrames - 1)];
-      drawScene(ctx!, { state, pose: preset.pose, field, viewport, theme, characterWorldHeight: 1 });
+      bodyA.draw(frame);
+      bodyB.draw(frame);
       frame += reducedMotion ? Math.ceil(totalFrames / 24) : 1;
       if (frame < totalFrames) {
         requestAnimationFrame(step);
       } else {
-        setTimeout(playPreset, PAUSE_SECONDS * 1000);
+        setTimeout(() => {
+          frame = 0;
+          requestAnimationFrame(step);
+        }, PAUSE_SECONDS * 1000);
       }
-    };
+    }
     requestAnimationFrame(step);
-  }
-
-  playPreset();
+  })();
 </script>

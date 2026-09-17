@@ -130,6 +130,30 @@ export function stepFrame(
 
 const NEUTRAL_INPUT: InputFrame = { moveX: 0, jumpHeld: false };
 
+/**
+ * Turns a sequence of already-simulated frames into the same height/
+ * displacement/airtime summary runTrial and the live loop both report.
+ * Shared so a live trial and a scripted (batch) trial are judged identically.
+ */
+export function summarizeTrial(frames: JumpState[], field: Field, startX: number): Omit<TrialResult, "frames"> {
+  const state = frames[frames.length - 1] ?? createInitialState(startX, field.groundY);
+  const complete = state.landingT !== null && state.phase === "grounded";
+  const takeoffY = state.takeoffY ?? field.groundY;
+  const takeoffX = state.takeoffX ?? startX;
+  const height = state.apexY - takeoffY;
+  const displacement = (complete ? (state.landingX ?? state.x) : state.x) - takeoffX;
+  const airtimeSeconds =
+    state.takeoffT !== null && state.landingT !== null ? state.landingT - state.takeoffT : null;
+
+  return {
+    complete,
+    height,
+    displacement,
+    airtimeSeconds: complete ? airtimeSeconds : null,
+    chargeDurationMs: null,
+  };
+}
+
 export function runTrial(
   inputs: InputFrame[],
   mode: JumpMode,
@@ -149,20 +173,5 @@ export function runTrial(
     if (state.phase === "fallen") break;
   }
 
-  const complete = state.landingT !== null && state.phase === "grounded";
-  const takeoffY = state.takeoffY ?? field.groundY;
-  const takeoffX = state.takeoffX ?? startX;
-  const height = state.apexY - takeoffY;
-  const displacement = (complete ? (state.landingX ?? state.x) : state.x) - takeoffX;
-  const airtimeSeconds =
-    state.takeoffT !== null && state.landingT !== null ? state.landingT - state.takeoffT : null;
-
-  return {
-    complete,
-    height,
-    displacement,
-    airtimeSeconds: complete ? airtimeSeconds : null,
-    chargeDurationMs: null,
-    frames,
-  };
+  return { ...summarizeTrial(frames, field, startX), frames };
 }
