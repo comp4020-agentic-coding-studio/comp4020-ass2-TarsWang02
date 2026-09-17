@@ -1,17 +1,21 @@
 ---
 title: Idris Fenn
 description:
-  A tutor working across the course's first reviews and the practical work that
-  follows them.
+  Tutor running the weekly workshops, from the first press-to-jump experiment
+  through to the final three-preset comparison.
 affiliation: Slop University School of Invented Disciplines
 role: tutor
 email: idris.fenn@slop.university
-contact: Ask during sessions, or email when a question cannot wait until the next one.
-photo: ./idris-fenn.avif
-photoAlt: A stylised portrait of a person facing the viewer, flat gold and black shapes on warm cream, in a two-ink risograph print
+contact: Ask during the workshop first — most questions turn out to be about a control everyone in the room can see. Email when it genuinely cannot wait.
 ---
 
-<!-- STARTER_CONTENT: replace this person entry, then remove this comment. -->
+Idris runs the room the assessments actually happen in. Their standing
+question in a workshop review is "show me the two trials, not the
+description of the two trials" — a rule that catches more disagreements than
+it starts.
 
-Replace this entry. A second person makes the listing, role ordering and
-teacher-reference fields visible before you replace the cast with your own.
+They came to teaching from accessibility consulting, which is most of why
+this course insists that every jump is playable by keyboard, why reduced
+motion turns off the cosmetic shake rather than the jump itself, and why nothing
+worth acting on is communicated by sound alone. If a control does not work
+without a mouse, Idris will find it in week 1, not week 11.

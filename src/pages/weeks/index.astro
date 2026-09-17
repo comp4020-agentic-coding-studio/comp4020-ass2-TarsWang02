@@ -1,0 +1,132 @@
+---
+import { getPublishedCollection } from "astro-course-university/content";
+import ContentLayout from "astro-theme-university/layouts/ContentLayout.astro";
+import { withBase } from "astro-theme-university/url";
+import { coursePhases } from "../../course-config";
+import { formatCourseDate } from "../../lib/dates";
+import { sessionLabels, siteConfig } from "../../site-config";
+
+const [lectures, sessions, assessments] = await Promise.all([
+  getPublishedCollection("lectures"),
+  getPublishedCollection("sessions"),
+  getPublishedCollection("assessments"),
+]);
+
+const lectureByWeek = new Map(lectures.map((l) => [l.data.week, l]));
+const sessionByWeek = new Map(sessions.map((s) => [s.data.week, s]));
+const assessmentByWeek = new Map(assessments.map((a) => [a.data.week, a]));
+
+const phaseIntro: Record<(typeof coursePhases)[number]["key"], string> = {
+  measure: "Look closely at a jump and put numbers on what it does.",
+  control: "Change how a jump is triggered, and how forgiving it is.",
+  express: "Change how a jump looks without changing what it does.",
+  evaluate: "Test a design against someone else's play, and defend a choice.",
+};
+---
+
+<ContentLayout
+  title="Weeks"
+  description="Twelve dated weeks across four phases — measure, control, express, evaluate — each pairing a lecture with a hands-on workshop."
+  {...siteConfig}
+>
+  <p>
+    Every week pairs a lecture (the question and the idea) with a{" "}
+    {sessionLabels.singular.toLowerCase()} (the hands-on task). Weeks with
+    graded work are marked below; see <a href={withBase("/assessments/")}>Assessments</a>{" "}
+    for the briefs and rubrics.
+  </p>
+
+  {
+    coursePhases.map((phase) => (
+      <section aria-labelledby={`phase-${phase.key}`}>
+        <h2 id={`phase-${phase.key}`}>{phase.label}</h2>
+        <p>{phaseIntro[phase.key]}</p>
+        <ul class="week-list">
+          {phase.weeks.map((week) => {
+            const lecture = lectureByWeek.get(week);
+            const session = sessionByWeek.get(week);
+            const assessment = assessmentByWeek.get(week);
+            return (
+              <li class="week-row">
+                <span class="week-number">Week {week}</span>
+                <span class="week-links">
+                  {lecture ? (
+                    <a href={withBase(`/lectures/${lecture.id}/`)}>{lecture.data.title}</a>
+                  ) : (
+                    <span class="pending">lecture not yet published</span>
+                  )}
+                  {session && (
+                    <>
+                      {" · "}
+                      <a href={withBase(`/sessions/${session.id}/`)}>
+                        {sessionLabels.singular}: {session.data.title}
+                      </a>
+                    </>
+                  )}
+                  {assessment && (
+                    <>
+                      {" · "}
+                      <a href={withBase(`/assessments/${assessment.id}/`)} class="assessment-tag">
+                        {assessment.data.title} due · {assessment.data.weight}%
+                      </a>
+                    </>
+                  )}
+                </span>
+                {(lecture ?? session) && (
+                  <span class="week-date">
+                    {formatCourseDate((lecture ?? session)!.data.date)}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    ))
+  }
+</ContentLayout>
+
+<style>
+  .week-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--at-spacing-2xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--at-spacing-sm);
+  }
+
+  .week-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.75rem;
+    padding: var(--at-spacing-sm) var(--at-spacing-md);
+    border-radius: var(--at-border-radius);
+    background: var(--at-bg-alt);
+  }
+
+  .week-number {
+    font-weight: 600;
+    min-width: 5.5rem;
+  }
+
+  .week-links {
+    flex: 1 1 auto;
+  }
+
+  .week-date {
+    color: var(--at-text-secondary);
+    font-size: var(--at-font-size-sm);
+    margin-left: auto;
+  }
+
+  .assessment-tag {
+    font-weight: 600;
+  }
+
+  .pending {
+    color: var(--at-text-secondary);
+    font-style: italic;
+  }
+</style>

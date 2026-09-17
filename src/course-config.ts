@@ -40,23 +40,31 @@ export const slopCourseMetaSchema = z
 
 // The single source of truth for the course record. The generated homepage,
 // navigation label and /api/index.json all read this object.
-// Replace every placeholder value, but keep the shape: the catalogue ingests
-// this API contract when the course is published.
 //
 // The code's last three digits were assigned to this repo when it was
-// provisioned, and no other course in the cohort has them. Change the first
-// digit to your course's level (and `level` to match); keep the other three.
-// STARTER_CONTENT: replace this course record, then remove this comment.
+// provisioned, and no other course in the cohort has them. The first digit is
+// the level; SLOP1280 (beginner-level) is the suggested default for this
+// no-prerequisite course.
 export const courseMeta = slopCourseMetaSchema.parse({
   code: "SLOP1280",
-  title: "Course Title Goes Here",
+  title: "The Anatomy of a Jump",
   session: "Semester 1",
   year: 2027,
   level: 1,
   startDate: "2027-02-22",
   endDate: "2027-05-28",
   description:
-    "One concise paragraph explaining what this course is, who it is for, " +
-    "and why somebody would choose to spend a semester taking it.",
-  tags: ["replace me"],
+    "A twelve-week studio in game feel, built around one mechanic: designing a " +
+    "2D jump. No game-development experience is assumed --- you measure, tune " +
+    "and compare a single jump using visual tools and controlled experiments, " +
+    "with guided code exploration as an optional extra.",
+  tags: ["game feel", "interaction design", "playtesting"],
 }) satisfies CourseMetaInput;
+
+/** The four phases the twelve weeks progress through, in order. */
+export const coursePhases = [
+  { key: "measure", label: "Measure", weeks: [1, 2, 3] },
+  { key: "control", label: "Control", weeks: [4, 5, 6] },
+  { key: "express", label: "Express", weeks: [7, 8, 9] },
+  { key: "evaluate", label: "Evaluate", weeks: [10, 11, 12] },
+] as const;
