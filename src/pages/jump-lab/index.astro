@@ -6,47 +6,88 @@ import { siteConfig } from "../../site-config";
 
 <ContentLayout
   title="Jump Lab"
-  description="Tune gravity, launch speed and air control with real measurements, and compare posture on an identical physical path. Presets and A/B replay arrive in a later stage."
+  description="Start from a preset or tune every number behind a jump, compare two configurations on the same recorded input, and compare posture on an identical physical path."
   {...siteConfig}
 >
   <p>
-    Two tools live here so far. The first lets you change the numbers behind
-    a jump and log what each change actually does. The second holds the
-    physical path fixed and only changes how the character looks in the air
-    — because posture is a cosmetic choice, never a physics one.
+    Three tools live here. The first lets you start from a preset or open up
+    every parameter, change the numbers behind a jump and log what each
+    change actually does. The second lets you record one real jump as
+    configuration A, then edit the numbers into configuration B and replay
+    the exact same input against both. The third holds the physical path
+    fixed and only changes how the character looks in the air — because
+    posture is a cosmetic choice, never a physics one.
   </p>
 
   <section id="gravity-lab" aria-labelledby="gravity-lab-heading">
     <h2 id="gravity-lab-heading">Gravity and launch speed</h2>
     <p>
-      Who is really in control while you're in the air? Adjust gravity,
-      launch speed, air control and ground speed, then jump — each change
-      applies to your <em>next</em> jump, never mid-air, and every completed
-      jump is logged below with the exact numbers it used.
+      Who is really in control while you're in the air? Start from a preset
+      or open the advanced parameters below, then jump — each change applies
+      to your <em>next</em> jump, never mid-air, and every completed jump is
+      logged below with the exact numbers it used.
     </p>
 
-    <div class="jump-lab-controls">
-      <label>
-        Gravity
-        <input type="range" id="gravity-lab-gravity" min="4" max="26" step="1" />
-        <output id="gravity-lab-gravity-value"></output>
-      </label>
-      <label>
-        Launch speed
-        <input type="range" id="gravity-lab-launch-speed" min="3" max="10" step="0.5" />
-        <output id="gravity-lab-launch-speed-value"></output>
-      </label>
-      <label>
-        Air control
-        <input type="range" id="gravity-lab-air-control" min="0" max="16" step="1" />
-        <output id="gravity-lab-air-control-value"></output>
-      </label>
-      <label>
-        Ground speed
-        <input type="range" id="gravity-lab-walk-speed" min="2" max="8" step="0.5" />
-        <output id="gravity-lab-walk-speed-value"></output>
-      </label>
+    <div id="gravity-lab-presets" class="jump-lab-presets" role="group" aria-label="Presets">
+      <button type="button" data-preset="floaty" class="at-button at-button--outline at-button--small" aria-pressed="false"
+        >Floaty</button
+      >
+      <button type="button" data-preset="heavy" class="at-button at-button--outline at-button--small" aria-pressed="false"
+        >Heavy</button
+      >
+      <button type="button" data-preset="precise" class="at-button at-button--outline at-button--small" aria-pressed="false"
+        >Precise</button
+      >
+      <span id="gravity-lab-preset-status" class="jump-lab-preset-status" aria-live="polite">Custom</span>
+      <button
+        type="button"
+        id="gravity-lab-preset-restore"
+        class="at-button at-button--ghost at-button--small"
+        hidden
+        >Restore preset</button
+      >
     </div>
+
+    <details id="gravity-lab-advanced" open>
+      <summary>Advanced parameters</summary>
+      <div class="jump-lab-controls">
+        <label>
+          Gravity
+          <input type="range" id="gravity-lab-gravity" min="4" max="26" step="1" />
+          <output id="gravity-lab-gravity-value"></output>
+        </label>
+        <label>
+          Launch speed
+          <input type="range" id="gravity-lab-launch-speed" min="3" max="10" step="0.5" />
+          <output id="gravity-lab-launch-speed-value"></output>
+        </label>
+        <label>
+          Air control
+          <input type="range" id="gravity-lab-air-control" min="0" max="16" step="1" />
+          <output id="gravity-lab-air-control-value"></output>
+        </label>
+        <label>
+          Ground speed
+          <input type="range" id="gravity-lab-walk-speed" min="2" max="8" step="0.5" />
+          <output id="gravity-lab-walk-speed-value"></output>
+        </label>
+        <label>
+          Release cut factor
+          <input type="range" id="gravity-lab-release-cut" min="0" max="1" step="0.05" />
+          <output id="gravity-lab-release-cut-value"></output>
+        </label>
+        <label>
+          Coyote time (ms)
+          <input type="range" id="gravity-lab-coyote-time" min="0" max="300" step="10" />
+          <output id="gravity-lab-coyote-time-value"></output>
+        </label>
+        <label>
+          Jump buffer (ms)
+          <input type="range" id="gravity-lab-jump-buffer" min="0" max="300" step="10" />
+          <output id="gravity-lab-jump-buffer-value"></output>
+        </label>
+      </div>
+    </details>
 
     <div id="gravity-lab-mode-switch" class="jump-mode-switch">
       <span>Mode:</span>
@@ -103,6 +144,14 @@ import { siteConfig } from "../../site-config";
       </div>
     </div>
 
+    <div class="jump-lab-copy-row">
+      <button type="button" id="gravity-lab-copy-config" class="at-button at-button--outline at-button--small"
+        >Copy configuration</button
+      >
+      <input type="text" id="gravity-lab-copy-output" class="jump-lab-copy-output" readonly hidden aria-label="Configuration link" />
+      <span id="gravity-lab-copy-status" aria-live="polite"></span>
+    </div>
+
     <table id="gravity-lab-log" class="jump-lab-log">
       <caption>Trial log (most recent first, up to 10 kept)</caption>
       <thead>
@@ -111,6 +160,9 @@ import { siteConfig } from "../../site-config";
           <th scope="col">Gravity</th>
           <th scope="col">Launch speed</th>
           <th scope="col">Air control</th>
+          <th scope="col">Release cut</th>
+          <th scope="col">Coyote ms</th>
+          <th scope="col">Buffer ms</th>
           <th scope="col">Height</th>
           <th scope="col">Displacement</th>
           <th scope="col">Airtime</th>
@@ -118,6 +170,127 @@ import { siteConfig } from "../../site-config";
       </thead>
       <tbody></tbody>
     </table>
+  </section>
+
+  <section id="ab-lab" aria-labelledby="ab-lab-heading">
+    <h2 id="ab-lab-heading">Compare two configurations, same input</h2>
+    <p>
+      Adjust the parameters below and press Record, then perform one jump —
+      that becomes configuration A, keystroke for keystroke. Change the
+      parameters again to define configuration B, then press Replay: both
+      bodies see the exact same recorded input from the same starting point,
+      so anything different between them comes from the numbers, not from
+      how the trial was played.
+    </p>
+
+    <div id="ab-lab-mode-switch" class="jump-mode-switch">
+      <span>Mode:</span>
+      <button type="button" data-mode="immediate" class="at-button at-button--outline at-button--small" aria-pressed="true"
+        >Immediate</button
+      >
+      <button type="button" data-mode="charged" class="at-button at-button--outline at-button--small" aria-pressed="false"
+        >Charged</button
+      >
+    </div>
+
+    <p id="ab-lab-status" class="jump-lab-preset-status" aria-live="polite">
+      Adjust the parameters below, then press Record and perform one jump to save configuration A.
+    </p>
+
+    <details open>
+      <summary>Parameters</summary>
+      <div class="jump-lab-controls">
+        <label>
+          Gravity
+          <input type="range" id="ab-lab-gravity" min="4" max="26" step="1" />
+          <output id="ab-lab-gravity-value"></output>
+        </label>
+        <label>
+          Launch speed
+          <input type="range" id="ab-lab-launch-speed" min="3" max="10" step="0.5" />
+          <output id="ab-lab-launch-speed-value"></output>
+        </label>
+        <label>
+          Air control
+          <input type="range" id="ab-lab-air-control" min="0" max="16" step="1" />
+          <output id="ab-lab-air-control-value"></output>
+        </label>
+        <label>
+          Ground speed
+          <input type="range" id="ab-lab-walk-speed" min="2" max="8" step="0.5" />
+          <output id="ab-lab-walk-speed-value"></output>
+        </label>
+        <label>
+          Release cut factor
+          <input type="range" id="ab-lab-release-cut" min="0" max="1" step="0.05" />
+          <output id="ab-lab-release-cut-value"></output>
+        </label>
+        <label>
+          Coyote time (ms)
+          <input type="range" id="ab-lab-coyote-time" min="0" max="300" step="10" />
+          <output id="ab-lab-coyote-time-value"></output>
+        </label>
+        <label>
+          Jump buffer (ms)
+          <input type="range" id="ab-lab-jump-buffer" min="0" max="300" step="10" />
+          <output id="ab-lab-jump-buffer-value"></output>
+        </label>
+      </div>
+    </details>
+
+    <div
+      id="ab-lab-focus-region"
+      class="jump-trial-playfield"
+      tabindex="0"
+      aria-label="Recording playfield. Use left and right arrow keys or A and D to move, and space to jump."
+    >
+      <JumpCanvas
+        id="ab-lab-canvas"
+        ariaLabel="A jump responding to the parameters above, used to record configuration A"
+        width={640}
+        height={360}
+      />
+    </div>
+
+    <div class="jump-touch-controls">
+      <button type="button" id="ab-lab-left" class="at-button at-button--large" aria-label="Move left">◀</button>
+      <button type="button" id="ab-lab-jump" class="at-button at-button--large" aria-label="Jump">Jump</button>
+      <button type="button" id="ab-lab-right" class="at-button at-button--large" aria-label="Move right">▶</button>
+    </div>
+
+    <div class="jump-trial-actions">
+      <button type="button" id="ab-lab-record" class="at-button at-button--outline at-button--small"
+        >Record configuration A</button
+      >
+      <button type="button" id="ab-lab-replay" class="at-button at-button--small" disabled>Replay A vs B</button>
+      <label class="jump-lab-playback-toggle">
+        <input type="checkbox" id="ab-lab-slow-playback" /> Slow playback
+      </label>
+      <button type="button" id="ab-lab-mute" class="at-button at-button--ghost at-button--small" aria-pressed="false"
+        >Mute</button
+      >
+    </div>
+
+    <div class="jump-lab-posture-grid">
+      <div class="jump-lab-posture-column">
+        <h3>Configuration A (recorded)</h3>
+        <JumpCanvas id="ab-lab-canvas-a" ariaLabel="Configuration A replaying the recorded input" width={320} height={300} />
+        <dl class="jump-trial-metrics">
+          <div><dt>Height</dt><dd id="ab-lab-metric-height-a">—</dd></div>
+          <div><dt>Displacement</dt><dd id="ab-lab-metric-displacement-a">—</dd></div>
+          <div><dt>Airtime</dt><dd id="ab-lab-metric-airtime-a">—</dd></div>
+        </dl>
+      </div>
+      <div class="jump-lab-posture-column">
+        <h3>Configuration B (current parameters)</h3>
+        <JumpCanvas id="ab-lab-canvas-b" ariaLabel="Configuration B replaying the recorded input" width={320} height={300} />
+        <dl class="jump-trial-metrics">
+          <div><dt>Height</dt><dd id="ab-lab-metric-height-b">—</dd></div>
+          <div><dt>Displacement</dt><dd id="ab-lab-metric-displacement-b">—</dd></div>
+          <div><dt>Airtime</dt><dd id="ab-lab-metric-airtime-b">—</dd></div>
+        </dl>
+      </div>
+    </div>
   </section>
 
   <section id="posture-lab" aria-labelledby="posture-lab-heading">
@@ -161,6 +334,7 @@ import { siteConfig } from "../../site-config";
 
 <style>
   #gravity-lab,
+  #ab-lab,
   #posture-lab {
     margin-block-end: 2.5rem;
   }
@@ -177,6 +351,35 @@ import { siteConfig } from "../../site-config";
     flex-direction: column;
     gap: 0.25rem;
     font-size: var(--at-font-size-sm);
+  }
+
+  .jump-lab-presets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-end: 0.75rem;
+  }
+
+  .jump-lab-presets button[aria-pressed="true"] {
+    background: var(--at-accent);
+    color: var(--at-on-accent);
+  }
+
+  .jump-lab-preset-status {
+    font-size: var(--at-font-size-sm);
+    color: var(--at-text-secondary);
+    margin-inline-start: 0.25rem;
+  }
+
+  details {
+    margin-block-end: 0.75rem;
+  }
+
+  details summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin-block-end: 0.5rem;
   }
 
   .jump-mode-switch {
@@ -239,7 +442,36 @@ import { siteConfig } from "../../site-config";
 
   .jump-trial-actions {
     display: flex;
-    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-block: 0.75rem;
+  }
+
+  .jump-lab-playback-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: var(--at-font-size-sm);
+  }
+
+  .jump-lab-copy-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-block-end: 1rem;
+  }
+
+  .jump-lab-copy-output {
+    flex: 1 1 20rem;
+    min-width: 0;
+    font-size: var(--at-font-size-sm);
+  }
+
+  .jump-lab-copy-row span {
+    font-size: var(--at-font-size-sm);
+    color: var(--at-text-secondary);
   }
 
   .jump-lab-log {
@@ -280,18 +512,17 @@ import { siteConfig } from "../../site-config";
 
 <script>
   import { createJumpAudio } from "../../lib/jump/audio";
+  import { decodeMotionConfig, encodeMotionConfig } from "../../lib/jump/config";
   import { flatField } from "../../lib/jump/field";
   import { createInputController } from "../../lib/jump/input";
-  import { createLiveLoop } from "../../lib/jump/loop";
-  import { DEFAULT_MOTION, PRESETS } from "../../lib/jump/presets";
+  import { createLiveLoop, LIVE_LOOP_DT } from "../../lib/jump/loop";
+  import { DEFAULT_MOTION, getPreset, PRESETS } from "../../lib/jump/presets";
   import { drawScene, makeViewport, readTheme } from "../../lib/jump/renderer";
   import { readPreference, writePreference } from "../../lib/jump/storage";
   import { runTrial } from "../../lib/jump/engine";
-  import type { JumpMode, MotionParams, PoseParams, TrialResult } from "../../lib/jump/types";
+  import type { InputFrame, JumpMode, JumpState, MotionParams, PoseParams, TrialResult } from "../../lib/jump/types";
 
-  const GRAVITY_MUTE_KEY = "gravity-lab-audio-muted";
-  const GRAVITY_MODE_KEY = "gravity-lab-mode";
-  const MAX_LOG_ROWS = 10;
+  const NEUTRAL_POSE: PoseParams = { armSwing: 0.5, legTuck: 0.4, landingCompression: 0.5 };
 
   function requireEl<T extends Element>(id: string): T {
     const el = document.getElementById(id) as T | null;
@@ -299,8 +530,16 @@ import { siteConfig } from "../../site-config";
     return el;
   }
 
+  function presetLabel(key: string): string {
+    return getPreset(key)?.label ?? key;
+  }
+
   // --- Gravity & launch speed experiment ---------------------------------
   (function setupGravityLab() {
+    const GRAVITY_MUTE_KEY = "gravity-lab-audio-muted";
+    const GRAVITY_MODE_KEY = "gravity-lab-mode";
+    const MAX_LOG_ROWS = 10;
+
     const canvas = requireEl<HTMLCanvasElement>("gravity-lab-canvas");
     const focusRegion = requireEl<HTMLElement>("gravity-lab-focus-region");
     const leftButton = requireEl<HTMLElement>("gravity-lab-left");
@@ -315,28 +554,66 @@ import { siteConfig } from "../../site-config";
     const modeButtons = Array.from(
       document.querySelectorAll<HTMLButtonElement>("#gravity-lab-mode-switch [data-mode]"),
     );
+    const presetButtons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("#gravity-lab-presets [data-preset]"),
+    );
+    const presetStatus = requireEl<HTMLElement>("gravity-lab-preset-status");
+    const presetRestoreButton = requireEl<HTMLButtonElement>("gravity-lab-preset-restore");
+    const copyButton = requireEl<HTMLButtonElement>("gravity-lab-copy-config");
+    const copyOutput = requireEl<HTMLInputElement>("gravity-lab-copy-output");
+    const copyStatus = requireEl<HTMLElement>("gravity-lab-copy-status");
 
     const gravitySlider = requireEl<HTMLInputElement>("gravity-lab-gravity");
     const launchSpeedSlider = requireEl<HTMLInputElement>("gravity-lab-launch-speed");
     const airControlSlider = requireEl<HTMLInputElement>("gravity-lab-air-control");
     const walkSpeedSlider = requireEl<HTMLInputElement>("gravity-lab-walk-speed");
+    const releaseCutSlider = requireEl<HTMLInputElement>("gravity-lab-release-cut");
+    const coyoteTimeSlider = requireEl<HTMLInputElement>("gravity-lab-coyote-time");
+    const jumpBufferSlider = requireEl<HTMLInputElement>("gravity-lab-jump-buffer");
+    const sliders = [
+      gravitySlider,
+      launchSpeedSlider,
+      airControlSlider,
+      walkSpeedSlider,
+      releaseCutSlider,
+      coyoteTimeSlider,
+      jumpBufferSlider,
+    ];
     const gravityValue = requireEl<HTMLOutputElement>("gravity-lab-gravity-value");
     const launchSpeedValue = requireEl<HTMLOutputElement>("gravity-lab-launch-speed-value");
     const airControlValue = requireEl<HTMLOutputElement>("gravity-lab-air-control-value");
     const walkSpeedValue = requireEl<HTMLOutputElement>("gravity-lab-walk-speed-value");
+    const releaseCutValue = requireEl<HTMLOutputElement>("gravity-lab-release-cut-value");
+    const coyoteTimeValue = requireEl<HTMLOutputElement>("gravity-lab-coyote-time-value");
+    const jumpBufferValue = requireEl<HTMLOutputElement>("gravity-lab-jump-buffer-value");
 
-    gravitySlider.value = String(DEFAULT_MOTION.gravity);
-    launchSpeedSlider.value = String(DEFAULT_MOTION.launchSpeed);
-    airControlSlider.value = String(DEFAULT_MOTION.airControl);
-    walkSpeedSlider.value = String(DEFAULT_MOTION.walkSpeed);
+    const urlConfig = decodeMotionConfig(location.search);
+
+    function applyMotionToSliders(motion: MotionParams) {
+      gravitySlider.value = String(motion.gravity);
+      launchSpeedSlider.value = String(motion.launchSpeed);
+      airControlSlider.value = String(motion.airControl);
+      walkSpeedSlider.value = String(motion.walkSpeed);
+      releaseCutSlider.value = String(motion.releaseCutFactor);
+      coyoteTimeSlider.value = String(motion.coyoteTimeMs);
+      jumpBufferSlider.value = String(motion.jumpBufferMs);
+      fixedExtras = { minLaunchSpeed: motion.minLaunchSpeed, chargeTimeMs: motion.chargeTimeMs };
+      refreshSliderReadouts();
+    }
+
+    let fixedExtras = { minLaunchSpeed: DEFAULT_MOTION.minLaunchSpeed, chargeTimeMs: DEFAULT_MOTION.chargeTimeMs };
+    applyMotionToSliders(urlConfig?.motion ?? DEFAULT_MOTION);
 
     function currentSliderMotion(): MotionParams {
       return {
-        ...DEFAULT_MOTION,
+        ...fixedExtras,
         gravity: Number(gravitySlider.value),
         launchSpeed: Number(launchSpeedSlider.value),
         airControl: Number(airControlSlider.value),
         walkSpeed: Number(walkSpeedSlider.value),
+        releaseCutFactor: Number(releaseCutSlider.value),
+        coyoteTimeMs: Number(coyoteTimeSlider.value),
+        jumpBufferMs: Number(jumpBufferSlider.value),
       };
     }
 
@@ -345,8 +622,52 @@ import { siteConfig } from "../../site-config";
       launchSpeedValue.textContent = launchSpeedSlider.value;
       airControlValue.textContent = airControlSlider.value;
       walkSpeedValue.textContent = walkSpeedSlider.value;
+      releaseCutValue.textContent = releaseCutSlider.value;
+      coyoteTimeValue.textContent = coyoteTimeSlider.value;
+      jumpBufferValue.textContent = jumpBufferSlider.value;
     }
     refreshSliderReadouts();
+
+    let activePresetKey: string | null = null;
+    let lastPresetKey: string | null = null;
+
+    function setPresetStatus() {
+      for (const button of presetButtons) {
+        button.setAttribute("aria-pressed", String(button.dataset.preset === activePresetKey));
+      }
+      if (activePresetKey) {
+        presetStatus.textContent = `Preset: ${presetLabel(activePresetKey)}`;
+        presetRestoreButton.hidden = true;
+      } else if (lastPresetKey) {
+        presetStatus.textContent = `Custom (edited from ${presetLabel(lastPresetKey)})`;
+        presetRestoreButton.hidden = false;
+      } else {
+        presetStatus.textContent = "Custom";
+        presetRestoreButton.hidden = true;
+      }
+    }
+    setPresetStatus();
+
+    for (const button of presetButtons) {
+      button.addEventListener("click", () => {
+        const preset = getPreset(button.dataset.preset!);
+        if (!preset) return;
+        applyMotionToSliders(preset.motion);
+        activePresetKey = preset.key;
+        lastPresetKey = preset.key;
+        setPresetStatus();
+        syncPendingMotion();
+      });
+    }
+
+    presetRestoreButton.addEventListener("click", () => {
+      const preset = lastPresetKey ? getPreset(lastPresetKey) : undefined;
+      if (!preset) return;
+      applyMotionToSliders(preset.motion);
+      activePresetKey = preset.key;
+      setPresetStatus();
+      syncPendingMotion();
+    });
 
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("2D canvas context unavailable");
@@ -359,7 +680,7 @@ import { siteConfig } from "../../site-config";
     const input = createInputController(focusRegion, { left: leftButton, right: rightButton, jump: jumpButton });
     const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
 
-    let mode: JumpMode = readPreference(GRAVITY_MODE_KEY) === "charged" ? "charged" : "immediate";
+    let mode: JumpMode = urlConfig?.mode ?? (readPreference(GRAVITY_MODE_KEY) === "charged" ? "charged" : "immediate");
     let trialCount = 0;
     let currentTrialMotion: MotionParams = currentSliderMotion();
 
@@ -395,6 +716,9 @@ import { siteConfig } from "../../site-config";
         currentTrialMotion.gravity.toFixed(1),
         currentTrialMotion.launchSpeed.toFixed(1),
         currentTrialMotion.airControl.toFixed(1),
+        currentTrialMotion.releaseCutFactor.toFixed(2),
+        currentTrialMotion.coyoteTimeMs.toFixed(0),
+        currentTrialMotion.jumpBufferMs.toFixed(0),
         `${summary.height.toFixed(2)}`,
         `${summary.displacement.toFixed(2)}`,
         summary.complete ? `${(summary.airtimeSeconds ?? 0).toFixed(2)}` : "Incomplete",
@@ -416,9 +740,13 @@ import { siteConfig } from "../../site-config";
         loop.reconfigure({ motion: currentSliderMotion() });
       }
     }
-    for (const slider of [gravitySlider, launchSpeedSlider, airControlSlider, walkSpeedSlider]) {
+    for (const slider of sliders) {
       slider.addEventListener("input", () => {
         refreshSliderReadouts();
+        if (activePresetKey) {
+          activePresetKey = null;
+          setPresetStatus();
+        }
         syncPendingMotion();
       });
     }
@@ -443,6 +771,20 @@ import { siteConfig } from "../../site-config";
       muteButton.textContent = next ? "Unmute" : "Mute";
     });
 
+    copyButton.addEventListener("click", async () => {
+      const query = encodeMotionConfig({ mode, motion: currentSliderMotion() });
+      const url = `${location.origin}${location.pathname}?${query}`;
+      copyOutput.value = url;
+      copyOutput.hidden = false;
+      try {
+        await navigator.clipboard.writeText(url);
+        copyStatus.textContent = "Copied to clipboard.";
+      } catch {
+        copyOutput.select();
+        copyStatus.textContent = "Clipboard unavailable — the link is selected below; copy it manually.";
+      }
+    });
+
     let unlocked = false;
     const unlockOnce = () => {
       if (unlocked) return;
@@ -456,12 +798,275 @@ import { siteConfig } from "../../site-config";
       syncPendingMotion();
       const state = loop.getState();
       const theme = readTheme(canvas);
-      drawScene(ctx!, { state, pose: { armSwing: 0.5, legTuck: 0.4, landingCompression: 0.5 }, field, viewport, theme, characterWorldHeight: 1 });
+      drawScene(ctx!, { state, pose: NEUTRAL_POSE, field, viewport, theme, characterWorldHeight: 1 });
       requestAnimationFrame(render);
     }
 
     loop.start();
     requestAnimationFrame(render);
+  })();
+
+  // --- A/B configuration comparison ---------------------------------------
+  (function setupAbLab() {
+    const canvas = requireEl<HTMLCanvasElement>("ab-lab-canvas");
+    const focusRegion = requireEl<HTMLElement>("ab-lab-focus-region");
+    const leftButton = requireEl<HTMLElement>("ab-lab-left");
+    const rightButton = requireEl<HTMLElement>("ab-lab-right");
+    const jumpButton = requireEl<HTMLElement>("ab-lab-jump");
+    const recordButton = requireEl<HTMLButtonElement>("ab-lab-record");
+    const replayButton = requireEl<HTMLButtonElement>("ab-lab-replay");
+    const slowPlaybackCheckbox = requireEl<HTMLInputElement>("ab-lab-slow-playback");
+    const muteButton = requireEl<HTMLButtonElement>("ab-lab-mute");
+    const statusEl = requireEl<HTMLElement>("ab-lab-status");
+    const modeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("#ab-lab-mode-switch [data-mode]"));
+
+    const gravitySlider = requireEl<HTMLInputElement>("ab-lab-gravity");
+    const launchSpeedSlider = requireEl<HTMLInputElement>("ab-lab-launch-speed");
+    const airControlSlider = requireEl<HTMLInputElement>("ab-lab-air-control");
+    const walkSpeedSlider = requireEl<HTMLInputElement>("ab-lab-walk-speed");
+    const releaseCutSlider = requireEl<HTMLInputElement>("ab-lab-release-cut");
+    const coyoteTimeSlider = requireEl<HTMLInputElement>("ab-lab-coyote-time");
+    const jumpBufferSlider = requireEl<HTMLInputElement>("ab-lab-jump-buffer");
+    const sliders = [
+      gravitySlider,
+      launchSpeedSlider,
+      airControlSlider,
+      walkSpeedSlider,
+      releaseCutSlider,
+      coyoteTimeSlider,
+      jumpBufferSlider,
+    ];
+    const gravityValue = requireEl<HTMLOutputElement>("ab-lab-gravity-value");
+    const launchSpeedValue = requireEl<HTMLOutputElement>("ab-lab-launch-speed-value");
+    const airControlValue = requireEl<HTMLOutputElement>("ab-lab-air-control-value");
+    const walkSpeedValue = requireEl<HTMLOutputElement>("ab-lab-walk-speed-value");
+    const releaseCutValue = requireEl<HTMLOutputElement>("ab-lab-release-cut-value");
+    const coyoteTimeValue = requireEl<HTMLOutputElement>("ab-lab-coyote-time-value");
+    const jumpBufferValue = requireEl<HTMLOutputElement>("ab-lab-jump-buffer-value");
+
+    gravitySlider.value = String(DEFAULT_MOTION.gravity);
+    launchSpeedSlider.value = String(DEFAULT_MOTION.launchSpeed);
+    airControlSlider.value = String(DEFAULT_MOTION.airControl);
+    walkSpeedSlider.value = String(DEFAULT_MOTION.walkSpeed);
+    releaseCutSlider.value = String(DEFAULT_MOTION.releaseCutFactor);
+    coyoteTimeSlider.value = String(DEFAULT_MOTION.coyoteTimeMs);
+    jumpBufferSlider.value = String(DEFAULT_MOTION.jumpBufferMs);
+
+    function currentMotion(): MotionParams {
+      return {
+        minLaunchSpeed: DEFAULT_MOTION.minLaunchSpeed,
+        chargeTimeMs: DEFAULT_MOTION.chargeTimeMs,
+        gravity: Number(gravitySlider.value),
+        launchSpeed: Number(launchSpeedSlider.value),
+        airControl: Number(airControlSlider.value),
+        walkSpeed: Number(walkSpeedSlider.value),
+        releaseCutFactor: Number(releaseCutSlider.value),
+        coyoteTimeMs: Number(coyoteTimeSlider.value),
+        jumpBufferMs: Number(jumpBufferSlider.value),
+      };
+    }
+
+    function refreshSliderReadouts() {
+      gravityValue.textContent = gravitySlider.value;
+      launchSpeedValue.textContent = launchSpeedSlider.value;
+      airControlValue.textContent = airControlSlider.value;
+      walkSpeedValue.textContent = walkSpeedSlider.value;
+      releaseCutValue.textContent = releaseCutSlider.value;
+      coyoteTimeValue.textContent = coyoteTimeSlider.value;
+      jumpBufferValue.textContent = jumpBufferSlider.value;
+    }
+    refreshSliderReadouts();
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("2D canvas context unavailable");
+    const canvasA = requireEl<HTMLCanvasElement>("ab-lab-canvas-a");
+    const canvasB = requireEl<HTMLCanvasElement>("ab-lab-canvas-b");
+    const ctxA = canvasA.getContext("2d");
+    const ctxB = canvasB.getContext("2d");
+    if (!ctxA || !ctxB) throw new Error("2D canvas context unavailable");
+    const heightA = requireEl<HTMLElement>("ab-lab-metric-height-a");
+    const displacementA = requireEl<HTMLElement>("ab-lab-metric-displacement-a");
+    const airtimeA = requireEl<HTMLElement>("ab-lab-metric-airtime-a");
+    const heightB = requireEl<HTMLElement>("ab-lab-metric-height-b");
+    const displacementB = requireEl<HTMLElement>("ab-lab-metric-displacement-b");
+    const airtimeB = requireEl<HTMLElement>("ab-lab-metric-airtime-b");
+
+    const audio = createJumpAudio(readPreference("ab-lab-audio-muted") === "true");
+    muteButton.setAttribute("aria-pressed", String(audio.isMuted()));
+    muteButton.textContent = audio.isMuted() ? "Unmute" : "Mute";
+
+    const field = flatField();
+    const input = createInputController(focusRegion, { left: leftButton, right: rightButton, jump: jumpButton });
+    const viewport = makeViewport(canvas.width, canvas.height, 55, canvas.height - 40, 0);
+    const replayViewport = makeViewport(canvasA.width, canvasA.height, 90, canvasA.height - 30, 0);
+
+    let mode: JumpMode = "immediate";
+    let recording = false;
+    let recordedInputs: InputFrame[] = [];
+    let configA: MotionParams | null = null;
+
+    for (const button of modeButtons) {
+      button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+    }
+
+    let framesA: JumpState[] = [];
+    let framesB: JumpState[] = [];
+    let playbackFrame = 0;
+    let playbackTotal = 0;
+
+    function clearReplay() {
+      framesA = [];
+      framesB = [];
+      playbackFrame = 0;
+      playbackTotal = 0;
+      heightA.textContent = "—";
+      displacementA.textContent = "—";
+      airtimeA.textContent = "—";
+      heightB.textContent = "—";
+      displacementB.textContent = "—";
+      airtimeB.textContent = "—";
+      ctxA!.clearRect(0, 0, canvasA.width, canvasA.height);
+      ctxB!.clearRect(0, 0, canvasB.width, canvasB.height);
+    }
+
+    function startFreshComparison(message: string) {
+      recording = false;
+      recordedInputs = [];
+      configA = null;
+      recordButton.disabled = false;
+      replayButton.disabled = true;
+      clearReplay();
+      statusEl.textContent = message;
+    }
+
+    const loop = createLiveLoop(
+      { mode, motion: currentMotion(), field },
+      {
+        getInput: () => {
+          const frame = input.getFrame();
+          if (recording) recordedInputs.push(frame);
+          return frame;
+        },
+        onTakeoff: () => {
+          if (recording) configA = currentMotion();
+          audio.playTakeoff();
+        },
+        onLanding: () => audio.playLanding(),
+        onTrialComplete: (summary) => {
+          if (recording) {
+            recording = false;
+            recordButton.disabled = false;
+            replayButton.disabled = !configA;
+            statusEl.textContent = configA
+              ? `Configuration A recorded (${summary.complete ? "landed" : "incomplete"}, ${recordedInputs.length} frames). Adjust the parameters above for configuration B, then press Replay.`
+              : "No jump was made — press Record and perform a jump to save configuration A.";
+          }
+        },
+      },
+    );
+
+    function syncPendingMotion() {
+      if (!recording && loop.getState().phase === "grounded") {
+        loop.reconfigure({ motion: currentMotion() });
+      }
+    }
+    for (const slider of sliders) {
+      slider.addEventListener("input", () => {
+        refreshSliderReadouts();
+        syncPendingMotion();
+      });
+    }
+
+    for (const button of modeButtons) {
+      button.addEventListener("click", () => {
+        mode = button.dataset.mode as JumpMode;
+        for (const b of modeButtons) b.setAttribute("aria-pressed", String(b === button));
+        loop.reconfigure({ mode });
+        loop.reset();
+        startFreshComparison("Mode changed — record a new configuration A to start a fresh comparison.");
+      });
+    }
+
+    recordButton.addEventListener("click", () => {
+      recording = true;
+      recordedInputs = [];
+      configA = null;
+      recordButton.disabled = true;
+      replayButton.disabled = true;
+      clearReplay();
+      loop.reconfigure({ motion: currentMotion() });
+      loop.reset();
+      statusEl.textContent = "Recording — perform a jump now.";
+    });
+
+    replayButton.addEventListener("click", () => {
+      if (!configA || recordedInputs.length === 0) return;
+      const configB = currentMotion();
+      const resultA = runTrial(recordedInputs, mode, configA, field, LIVE_LOOP_DT);
+      const resultB = runTrial(recordedInputs, mode, configB, field, LIVE_LOOP_DT);
+      framesA = resultA.frames;
+      framesB = resultB.frames;
+      playbackFrame = 0;
+      playbackTotal = Math.max(framesA.length, framesB.length);
+      heightA.textContent = `${resultA.height.toFixed(2)} units`;
+      displacementA.textContent = `${resultA.displacement.toFixed(2)} units`;
+      airtimeA.textContent = resultA.complete ? `${(resultA.airtimeSeconds ?? 0).toFixed(2)} s` : "Incomplete";
+      heightB.textContent = `${resultB.height.toFixed(2)} units`;
+      displacementB.textContent = `${resultB.displacement.toFixed(2)} units`;
+      airtimeB.textContent = resultB.complete ? `${(resultB.airtimeSeconds ?? 0).toFixed(2)} s` : "Incomplete";
+    });
+
+    muteButton.addEventListener("click", () => {
+      const next = !audio.isMuted();
+      audio.setMuted(next);
+      writePreference("ab-lab-audio-muted", String(next));
+      muteButton.setAttribute("aria-pressed", String(next));
+      muteButton.textContent = next ? "Unmute" : "Mute";
+    });
+
+    let unlocked = false;
+    const unlockOnce = () => {
+      if (unlocked) return;
+      unlocked = true;
+      audio.unlock();
+    };
+    focusRegion.addEventListener("keydown", unlockOnce, { once: true });
+    focusRegion.addEventListener("pointerdown", unlockOnce, { once: true });
+
+    function render() {
+      syncPendingMotion();
+      const state = loop.getState();
+      const theme = readTheme(canvas);
+      drawScene(ctx!, { state, pose: NEUTRAL_POSE, field, viewport, theme, characterWorldHeight: 1 });
+      requestAnimationFrame(render);
+    }
+    loop.start();
+    requestAnimationFrame(render);
+
+    // Playback only changes how many real ticks each simulated frame is held
+    // for — the simulated frames themselves were fixed the moment Replay ran.
+    let playbackTick = 0;
+    function stepPlayback() {
+      requestAnimationFrame(stepPlayback);
+      if (playbackTotal === 0) return;
+      const slow = slowPlaybackCheckbox.checked;
+      playbackTick++;
+      if (slow && playbackTick % 2 !== 0) return;
+
+      const theme = readTheme(canvasA);
+      if (framesA.length > 0) {
+        const stateA = framesA[Math.min(playbackFrame, framesA.length - 1)];
+        drawScene(ctxA!, { state: stateA, pose: NEUTRAL_POSE, field, viewport: replayViewport, theme, characterWorldHeight: 1 });
+      }
+      if (framesB.length > 0) {
+        const stateB = framesB[Math.min(playbackFrame, framesB.length - 1)];
+        drawScene(ctxB!, { state: stateB, pose: NEUTRAL_POSE, field, viewport: replayViewport, theme, characterWorldHeight: 1 });
+      }
+      if (playbackFrame < playbackTotal - 1) {
+        playbackFrame++;
+      }
+    }
+    requestAnimationFrame(stepPlayback);
   })();
 
   // --- Posture comparison --------------------------------------------------

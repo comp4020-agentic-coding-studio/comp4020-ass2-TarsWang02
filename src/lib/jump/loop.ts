@@ -1,7 +1,11 @@
 import { createInitialState, stepFrame, summarizeTrial } from "./engine";
 import type { Field, InputFrame, JumpMode, JumpState, MotionParams, TrialResult } from "./types";
 
-const FIXED_DT = 1 / 60;
+/** The fixed timestep every live trial steps at. Exported so recorded input
+ * sequences (captured frame-by-frame during a live trial) can be replayed
+ * through runTrial() at the exact dt they were captured with. */
+export const LIVE_LOOP_DT = 1 / 60;
+const FIXED_DT = LIVE_LOOP_DT;
 const MAX_CATCHUP_STEPS = 5;
 
 export interface LiveLoopConfig {
