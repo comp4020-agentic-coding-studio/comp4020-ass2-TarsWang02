@@ -54,10 +54,9 @@ export const courseMeta = slopCourseMetaSchema.parse({
   startDate: "2027-02-22",
   endDate: "2027-05-28",
   description:
-    "A twelve-week studio in game feel, built around one mechanic: designing a " +
-    "2D jump. No game-development experience is assumed --- you measure, tune " +
-    "and compare a single jump using visual tools and controlled experiments, " +
-    "with guided code exploration as an optional extra.",
+    "A twelve-week studio in game feel: measure, tune and compare one 2D jump " +
+    "using visual tools, with an optional guided-code path. No game-development " +
+    "experience required.",
   tags: ["game feel", "interaction design", "playtesting"],
 }) satisfies CourseMetaInput;
 

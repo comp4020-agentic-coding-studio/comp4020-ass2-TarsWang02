@@ -300,7 +300,7 @@ import { siteConfig } from "../../site-config";
         </dl>
       </div>
       <div class="jump-lab-posture-column">
-        <h3>Configuration B (current parameters)</h3>
+        <h3>Configuration B (current)</h3>
         <JumpCanvas id="ab-lab-canvas-b" ariaLabel="Configuration B replaying the recorded input" width={320} height={300} />
         <dl class="jump-trial-metrics">
           <div><dt>Height</dt><dd id="ab-lab-metric-height-b">—</dd></div>
@@ -530,6 +530,11 @@ import { siteConfig } from "../../site-config";
 
   .jump-lab-posture-column h3 {
     margin-block-start: 0;
+    /* Reserve two lines' worth of height so a longer heading on one side
+       (e.g. "Configuration B (current parameters)") never pushes that
+       side's canvas, ground line and metrics out of alignment with the
+       other side's shorter heading. */
+    min-height: 2.5em;
   }
 </style>
 
