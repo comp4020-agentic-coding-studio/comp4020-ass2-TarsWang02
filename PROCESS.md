@@ -1,53 +1,62 @@
 # Process overview
 
-<!-- TEMPLATE: this file is a shape to fill in, not a form. Replace everything
-     in it with your own overview, and delete this comment — `pnpm
-     check:evidence` will remind you if it's still here. -->
-
-Written by you, for a reader: how you got from the brief to the harness and
-agentic workflow behind this submission. Markers read this file and follow its
-citations; they don't trawl the repo for evidence you didn't point at.
-
-This file is the shape; the course site's
-[assessment page](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#what-you-submit)
-is the requirement, and its
-[word counts](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#word-counts)
-cover every deliverable.
-
 ## What I built
 
-One paragraph: the thing, and the idea behind it.
+The Anatomy of a Jump is a twelve-week course built on the supplied Astro
+platform, teaching measurement, control, expression and evaluation through one
+shared, deterministic jump-physics engine rather than twelve disconnected
+demos. A student's core tool is the Jump Lab: gravity/launch-speed
+experimentation, preset-vs-custom configuration with an A/B replay that holds
+input fixed and varies one parameter, and a fixed-path posture comparison that
+demonstrates pose can never touch trajectory or collision. Every core task has
+a non-coding route, matching the three assessments (Jump Autopsy, Take
+Control, One Body Three Personalities).
 
 ## How I got here
 
-The account of the process: how the work actually went, and how you knew the
-result was right. Tell it in whatever order makes it clear. A weekly prototype
-needs a paragraph or two; an assignment needs more.
+The engine came first and stayed dependency-free:
+[`192c827`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/192c827)
+adds `src/lib/jump/engine.ts` as pure, fixed-timestep simulation with no DOM
+access, so `spec/jump-engine.test.ts` could assert exact analytic
+height/airtime formulas and byte-identical determinism from day one.
+[`f0a5a69`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/f0a5a69)
+adds the procedural humanoid renderer as a second, independent module — pose
+parameters go in, screen-space geometry comes out, and nothing about a body's
+posture can reach back into the physics state. That separation is the
+project's central architectural bet, and it is what
+[`757b597`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/757b597)'s
+posture-comparison tool and
+[`596a62c`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/596a62c)'s
+A/B replay both lean on: two bodies, one recorded trajectory.
 
-Cite the record as you go, as links whose text is the commit hash or range and
-whose target is this repo's commit or compare URL, so a reader clicks straight
-to the evidence:
+Real use caught a real gap:
+[`fceaad8`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/fceaad8)
+fixes the Jump Autopsy brief's `?a=floaty&b=precise&mode=immediate` shorthand
+link, which the Lab was silently ignoring in favour of its own stored
+defaults — found by actually following the link the brief promises, not by
+reading the code that generates it.
 
-- one commit: [`a1b2c3d`](https://github.com/YOUR-ORG/YOUR-REPO/commit/a1b2c3d)
-- a range:
-  [`a1b2c3d...e4f5a6b`](https://github.com/YOUR-ORG/YOUR-REPO/compare/a1b2c3d...e4f5a6b)
+[`9ac2e90`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/9ac2e90)
+replaces both remaining placeholder deliverables (the week-1 deck, the
+policies page) and writes weeks 3-12 as a question-experiment-explanation-task
+arc that cross-links to whichever assessment each week rehearses for.
+[`6812ccf`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/6812ccf)
+adds tests for exactly the promises that expansion depends on and that no
+existing test covered: all twelve weeks present, exactly three assessments
+summing to 100%, and the week-7 deck actually wired to its lecture.
 
-To pair a prompt with the commit it produced, quote the prompt (curated, not a
-full transcript) next to the citation:
+Final verification was real-browser, at the course's own two marking
+viewports (1920×1080 and 390×844, from the assessment page's marking-
+environment section), not just `pnpm check`'s automated build/axe/link
+checks. It found one genuine bug —
+[`48a3473`](https://github.com/comp4020-agentic-coding-studio/comp4020-ass2-TarsWang02/commit/48a3473):
+the ten-column trial-log table had no scroll wrapper, so it forced the entire
+page to overflow horizontally at 390px — fixed by containing the overflow in
+the table's own box instead of changing its columns or ten-row cap. The same
+pass also produced two apparent failures (a mid-air parameter edit, an A/B
+replay) that turned out, on inspection with a debug script, to be my
+verification script stealing keyboard focus by calling `.fill()` on a slider
+outside the playfield's focus region — the app's own focus-scoped input
+handling was working correctly, and I fixed the script rather than the app.
 
-> the prompt, verbatim
-
-Screenshots are welcome where one carries the point better than a sentence does.
-Commit the file to this repo and link it with a **relative** path, which is what
-makes it render on GitHub: `![alt text](docs/before.png)`. Images don't count
-towards the word count and don't replace the citation.
-
-## Before you ship
-
-`pnpm check:evidence` verifies that this comment is gone, that your citations
-resolve to real commits, that a crit week's reflection entry is in
-`reflections/`, and that your `CLAUDE.md` is there. It checks that your account
-is traceable, not that it is good: that is the marker's call.
-
-Images aren't checked: unlike a citation whose SHA doesn't resolve, a broken
-image is visible the moment this file is rendered on GitHub.
+`pnpm check` and `pnpm check:evidence` are both green as of this account.
