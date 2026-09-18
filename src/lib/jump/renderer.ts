@@ -35,6 +35,9 @@ const ARM_LENGTH = 0.28;
 const LEG_LENGTH = 0.45;
 const ARM_HANG_ANGLE = -1.35; // radians from +x axis, pointing mostly downward
 const LEG_HANG_ANGLE = -1.57; // straight down
+const RUN_LEG_SWING_ANGLE = 0.55;
+const RUN_ARM_SWING_ANGLE = 0.45;
+const RUN_LEG_BEND = 0.3;
 
 function rotate(origin: Point, angle: number, length: number): Point {
   return { x: origin.x + Math.cos(angle) * length, y: origin.y + Math.sin(angle) * length };
@@ -68,15 +71,34 @@ export function humanoidGeometry(state: JumpState, pose: PoseParams): HumanoidGe
   const rightShoulder: Point = { x: SHOULDER_X, y: SHOULDER_Y };
   const rightHip: Point = { x: HIP_X, y: HIP_Y };
 
-  // The right side swings forward with the direction of travel; the left
-  // side is its mirror image, which is exactly opposite-phase arm swing.
-  const swing = p.armSwingAngle * facing;
-  const rightArm = limb(rightShoulder, ARM_HANG_ANGLE - swing, Math.abs(swing) * 0.6, ARM_LENGTH);
-  const leftArm = mirrorLimb(rightArm);
+  let rightArm: Limb;
+  let leftArm: Limb;
+  let rightLeg: Limb;
+  let leftLeg: Limb;
 
-  const tuck = p.legTuckAmount;
-  const rightLeg = limb(rightHip, LEG_HANG_ANGLE, tuck * 1.4, LEG_LENGTH * (1 - tuck * 0.3));
-  const leftLeg = mirrorLimb(rightLeg);
+  if (p.runCyclePhase !== null) {
+    // A ground stride is asymmetric at any instant (contralateral: right leg
+    // forward pairs with left arm forward), so each side is placed
+    // independently here instead of mirroring one computed side onto the
+    // other the way every other pose in this file does.
+    const legSwing = Math.sin(p.runCyclePhase) * RUN_LEG_SWING_ANGLE * facing;
+    const armSwing = Math.sin(p.runCyclePhase) * RUN_ARM_SWING_ANGLE * facing;
+    const frontBend = (side: number) => Math.max(0, Math.sin(p.runCyclePhase! * side)) * RUN_LEG_BEND;
+    rightLeg = limb(rightHip, LEG_HANG_ANGLE + legSwing, frontBend(1), LEG_LENGTH);
+    leftLeg = limb(mirrorPoint(rightHip), LEG_HANG_ANGLE - legSwing, frontBend(-1), LEG_LENGTH);
+    rightArm = limb(rightShoulder, ARM_HANG_ANGLE - armSwing, 0, ARM_LENGTH);
+    leftArm = limb(mirrorPoint(rightShoulder), ARM_HANG_ANGLE + armSwing, 0, ARM_LENGTH);
+  } else {
+    // The right side swings forward with the direction of travel; the left
+    // side is its mirror image, which is exactly opposite-phase arm swing.
+    const swing = p.armSwingAngle * facing;
+    rightArm = limb(rightShoulder, ARM_HANG_ANGLE - swing, Math.abs(swing) * 0.6, ARM_LENGTH);
+    leftArm = mirrorLimb(rightArm);
+
+    const tuck = p.legTuckAmount;
+    rightLeg = limb(rightHip, LEG_HANG_ANGLE, tuck * 1.4, LEG_LENGTH * (1 - tuck * 0.3));
+    leftLeg = mirrorLimb(rightLeg);
+  }
 
   const squashY = 1 - p.compressionAmount * 0.25;
   const squashX = 1 + p.compressionAmount * 0.2;
